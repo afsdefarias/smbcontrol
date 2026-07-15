@@ -69,3 +69,10 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ## 📄 License / Licença
 This project is licensed under the [GPLv3 License](LICENSE) / *Este projeto está licenciado sob a Licença GPLv3.*
+
+👨‍💻 Founders / Fundadores
+Este projeto foi idealizado e criado por:
+
+| [<img src="https://github.com/VictorWegner.png" width="75px;"/>](https://github.com/VictorWegner) | [<img src="https://github.com/afsdefarias.png" width="75px;"/>](https://github.com/afsdefarias) | [<img src="https://github.com/jporco.png" width="75px;"/>](https://github.com/jporco) |
+| :---: | :---: | :---: |
+| **Victor Wegner** | **André de Farias** | **JPORCO** |
