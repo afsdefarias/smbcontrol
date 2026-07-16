@@ -1,0 +1,7 @@
+<?php
+return [
+    'host' => '127.0.0.1',
+    'dbname' => 'smbcontrol',
+    'user' => 'smbcontrol_user',
+    'password' => 'smbcontrol_pass' // Usuário dedicado para o painel
+];

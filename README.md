@@ -44,10 +44,11 @@ O **smbcontrol** foi idealizado para atender às rígidas exigências de complia
 
 ### ✨ Funcionalidades
 * **Relatórios de Auditoria:** Geração de relatórios detalhados a partir dos logs do `vfs_full_audit`.
-* **Rastreabilidade de Acesso:** Monitore quem criou, modificou, leu ou deletou arquivos específicos.
-* **Gerenciamento de Compartilhamentos:** Interface amigável para gerenciar pastas e regras de acesso do Samba.
-* **Monitoramento em Tempo Real:** Visualize conexões SMB ativas.
-* **Leve e Rápido:** Arquitetura otimizada para rodar nativamente na sua infraestrutura.
+* **Rastreabilidade de Acesso:** Monitore quem criou, modificou, leu ou deletou arquivos específicos usando relatórios diretos do syslog.
+* **Gerenciamento de Compartilhamentos:** Interface amigável para criar pastas, configurar donos (chown) e matrizes de permissão.
+* **Gerenciamento de Discos:** Liste, formate e monte discos rígidos adicionais na interface web de forma simplificada.
+* **Monitoramento em Tempo Real:** Visualize conexões SMB ativas e status do serviço smbd.
+* **Leve e Rápido:** Arquitetura otimizada para rodar nativamente na sua infraestrutura, sem dependência pesada de banco de dados para os logs.
 
 ### ⚙️ Pré-requisitos
 * Ambiente Linux (Debian/Ubuntu) ou FreeBSD.
@@ -70,7 +71,9 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 ## 📄 License / Licença
 This project is licensed under the [GPLv3 License](LICENSE) / *Este projeto está licenciado sob a Licença GPLv3.*
 
-👨‍💻 Founders / Fundadores
+---
+
+## 👨‍💻 Founders / Fundadores
 Este projeto foi idealizado e criado por:
 
 | [<img src="https://github.com/VictorWegner.png" width="75px;"/>](https://github.com/VictorWegner) | [<img src="https://github.com/afsdefarias.png" width="75px;"/>](https://github.com/afsdefarias) | [<img src="https://github.com/jporco.png" width="75px;"/>](https://github.com/jporco) |
