@@ -118,6 +118,47 @@ class SambaController {
         return implode(' ', array_values(array_unique($items)));
     }
 
+    private function sendJson(array $payload, int $status = 200): void {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($payload);
+        exit;
+    }
+
+    private function assertSafeAbsolutePath(string $path): void {
+        if ($path === '' || str_contains($path, "\0") || !str_starts_with($path, '/') || preg_match('#(^|/)\.\.(/|$)#', $path)) {
+            throw new \InvalidArgumentException(smb_t('Invalid path. Use an absolute path without traversal.', 'Caminho inválido. Use um caminho absoluto sem travessia de diretórios.'));
+        }
+    }
+
+    private function assertSafeFolderName(string $name): void {
+        if ($name === '' || str_contains($name, "\0") || str_contains($name, '/') || $name === '.' || $name === '..') {
+            throw new \InvalidArgumentException(smb_t('Invalid folder name.', 'Nome de pasta inválido.'));
+        }
+    }
+
+    private function listDirectories(string $path): array {
+        $this->assertSafeAbsolutePath($path);
+        $path = rtrim($path, '/') ?: '/';
+        $command = '/usr/bin/find ' . escapeshellarg($path) . ' -mindepth 1 -maxdepth 1 -type d -printf ' . escapeshellarg("%f\t%p\n");
+        $result = $this->runSudo($command, smb_t('Could not list folders', 'Não foi possível listar as pastas'));
+        $directories = [];
+
+        foreach (explode("\n", trim($result['output'])) as $line) {
+            if ($line === '' || !str_contains($line, "\t")) {
+                continue;
+            }
+            [$name, $fullPath] = explode("\t", $line, 2);
+            $directories[] = [
+                'name' => $name,
+                'path' => $fullPath,
+            ];
+        }
+
+        usort($directories, fn($a, $b) => strcasecmp($a['name'], $b['name']));
+        return $directories;
+    }
+
     private function sectionFields(array $fields): array {
         $indexed = [];
         foreach ($fields as $field) {
@@ -622,6 +663,51 @@ class SambaController {
         }
 
         require __DIR__ . '/../Views/recycle.php';
+    }
+
+    public function pathBrowser() {
+        try {
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $parent = trim($_POST['parent'] ?? '/srv/samba');
+                $name = trim($_POST['name'] ?? '');
+                $this->assertSafeAbsolutePath($parent);
+                $this->assertSafeFolderName($name);
+
+                $newPath = rtrim($parent, '/') . '/' . $name;
+                $this->assertSafeAbsolutePath($newPath);
+                $this->runSudo('/usr/bin/mkdir -p ' . escapeshellarg($newPath), smb_t('Could not create folder', 'Não foi possível criar a pasta'));
+
+                $this->sendJson([
+                    'ok' => true,
+                    'path' => $newPath,
+                    'directories' => $this->listDirectories($parent),
+                ]);
+            }
+
+            $path = trim($_GET['path'] ?? '/srv/samba');
+            $path = rtrim($path, '/') ?: '/';
+            try {
+                $directories = $this->listDirectories($path);
+            } catch (\Exception $e) {
+                if ($path === '/') {
+                    throw $e;
+                }
+                $path = dirname($path);
+                $directories = $this->listDirectories($path);
+            }
+
+            $this->sendJson([
+                'ok' => true,
+                'path' => $path,
+                'parent' => dirname(rtrim($path, '/') ?: '/'),
+                'directories' => $directories,
+            ]);
+        } catch (\Exception $e) {
+            $this->sendJson([
+                'ok' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
     }
 
     public function users() {

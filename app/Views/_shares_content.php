@@ -41,7 +41,14 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="text-muted font-sans text-sm"><?= smb_t('Linux path', 'Pasta no Linux') ?></label>
-                        <input type="text" name="path" value="/srv/samba/" placeholder="<?= htmlspecialchars(smb_t('e.g. /srv/samba/documents', 'ex.: /srv/samba/documentos')) ?>" required class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+                        <div class="flex">
+                            <input type="text" name="path" value="/srv/samba/" placeholder="<?= htmlspecialchars(smb_t('e.g. /srv/samba/documents', 'ex.: /srv/samba/documentos')) ?>" required class="min-w-0 flex-1 px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-l-sm focus:border-acc transition-colors">
+                            <button type="button" onclick="openPathBrowser()" class="w-11 flex items-center justify-center border border-l-0 border-bg0 bg-bg0 text-muted hover:text-acc hover:border-acc transition-colors rounded-r-sm" title="<?= htmlspecialchars(smb_t('Browse folders', 'Navegar pelas pastas')) ?>">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h6l2 2h10v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -167,9 +174,183 @@
     </div>
 </div>
 
+<!-- Folder Browser Modal -->
+<div id="pathBrowserModal" class="modal-overlay">
+    <div class="modal-content max-w-2xl" onclick="event.stopPropagation()">
+        <div class="p-4 border-b border-bg0 bg-bg0/50 flex justify-between items-center">
+            <h2 class="text-lg font-ui text-fg font-bold"><?= smb_t('Select Linux folder', 'Selecionar pasta Linux') ?></h2>
+            <button type="button" onclick="closeModal('pathBrowserModal')" class="text-muted hover:text-err transition">&times;</button>
+        </div>
+
+        <div class="p-5 flex flex-col gap-4 font-mono text-sm">
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="pathBrowserGoUp()" class="w-9 h-9 flex items-center justify-center border border-bg0 bg-bg0 text-muted hover:text-acc hover:border-acc rounded-sm transition" title="<?= htmlspecialchars(smb_t('Go up', 'Subir')) ?>">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                    </svg>
+                </button>
+                <div id="pathBrowserCurrent" class="min-w-0 flex-1 px-3 py-2 bg-bg0 border border-bg0 rounded-sm text-fg truncate">/srv/samba</div>
+                <button type="button" onclick="selectCurrentPath()" class="px-4 py-2 bg-acc text-bg0 hover:bg-acc/90 rounded-sm transition uppercase tracking-wider text-xs font-medium">
+                    <?= smb_t('Select', 'Selecionar') ?>
+                </button>
+            </div>
+
+            <div id="pathBrowserError" class="hidden bg-err/10 border-l-4 border-err p-3 text-err text-xs"></div>
+
+            <div id="pathBrowserList" class="border border-bg0 rounded-sm bg-bg0/30 min-h-[220px] max-h-[320px] overflow-y-auto divide-y divide-bg0"></div>
+
+            <div class="border-t border-bg0 pt-4 flex flex-col md:flex-row gap-2">
+                <input type="text" id="newFolderName" placeholder="<?= htmlspecialchars(smb_t('New folder name', 'Nome da nova pasta')) ?>" class="min-w-0 flex-1 px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+                <button type="button" onclick="createFolderInCurrentPath()" class="px-4 py-2 bg-acc2 text-bg0 hover:bg-acc2/90 rounded-sm transition uppercase tracking-wider text-xs font-medium">
+                    <?= smb_t('Create Folder', 'Criar pasta') ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 const defaultShareBasePath = '/srv/samba/';
 let sharePermissionsTouched = false;
+let pathBrowserPath = defaultShareBasePath.replace(/\/$/, '');
+const pathBrowserText = {
+    loading: <?= json_encode(smb_t('Loading folders...', 'Carregando pastas...')) ?>,
+    empty: <?= json_encode(smb_t('No subfolders found.', 'Nenhuma subpasta encontrada.')) ?>,
+    open: <?= json_encode(smb_t('Open folder', 'Abrir pasta')) ?>,
+    createName: <?= json_encode(smb_t('Enter a folder name.', 'Informe o nome da pasta.')) ?>,
+    requestFailed: <?= json_encode(smb_t('Request failed.', 'A requisição falhou.')) ?>,
+};
+
+function pathBrowserCsrf() {
+    return document.querySelector('#shareWizardModal input[name=csrf_token]')?.value || '';
+}
+
+function setPathBrowserError(message = '') {
+    const errorBox = document.getElementById('pathBrowserError');
+    if (!errorBox) return;
+    errorBox.textContent = message;
+    errorBox.classList.toggle('hidden', message === '');
+}
+
+function setPathBrowserLoading() {
+    const list = document.getElementById('pathBrowserList');
+    if (!list) return;
+    list.innerHTML = '';
+    const row = document.createElement('div');
+    row.className = 'px-4 py-8 text-center text-muted italic';
+    row.textContent = pathBrowserText.loading;
+    list.appendChild(row);
+}
+
+function renderPathBrowser(path, directories) {
+    pathBrowserPath = path || '/';
+    const current = document.getElementById('pathBrowserCurrent');
+    const list = document.getElementById('pathBrowserList');
+    if (current) current.textContent = pathBrowserPath;
+    if (!list) return;
+
+    list.innerHTML = '';
+    if (!directories.length) {
+        const row = document.createElement('div');
+        row.className = 'px-4 py-8 text-center text-muted italic';
+        row.textContent = pathBrowserText.empty;
+        list.appendChild(row);
+        return;
+    }
+
+    directories.forEach(directory => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-bg0/60 transition-colors';
+        button.title = `${pathBrowserText.open}: ${directory.path}`;
+        button.addEventListener('click', () => loadPathBrowser(directory.path));
+
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        icon.setAttribute('class', 'w-4 h-4 text-acc shrink-0');
+        icon.setAttribute('fill', 'none');
+        icon.setAttribute('stroke', 'currentColor');
+        icon.setAttribute('viewBox', '0 0 24 24');
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h6l2 2h10v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>';
+
+        const label = document.createElement('span');
+        label.className = 'min-w-0 flex-1 text-fg truncate';
+        label.textContent = directory.name;
+
+        button.appendChild(icon);
+        button.appendChild(label);
+        list.appendChild(button);
+    });
+}
+
+async function loadPathBrowser(path) {
+    setPathBrowserError('');
+    setPathBrowserLoading();
+    try {
+        const response = await fetch(`/samba/path-browser?path=${encodeURIComponent(path || defaultShareBasePath)}`, {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' },
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) throw new Error(payload.error || pathBrowserText.requestFailed);
+        renderPathBrowser(payload.path, payload.directories || []);
+    } catch (error) {
+        renderPathBrowser(pathBrowserPath, []);
+        setPathBrowserError(error.message || pathBrowserText.requestFailed);
+    }
+}
+
+function openPathBrowser() {
+    const pathInput = document.querySelector('#shareWizardModal input[name=path]');
+    const startPath = (pathInput?.value || defaultShareBasePath).trim() || defaultShareBasePath;
+    openModal('pathBrowserModal');
+    loadPathBrowser(startPath);
+}
+
+function pathBrowserGoUp() {
+    if (pathBrowserPath === '/') return;
+    const parent = pathBrowserPath.replace(/\/+$/, '').split('/').slice(0, -1).join('/') || '/';
+    loadPathBrowser(parent);
+}
+
+function selectCurrentPath() {
+    const pathInput = document.querySelector('#shareWizardModal input[name=path]');
+    if (pathInput) {
+        pathInput.value = pathBrowserPath === '/' ? '/' : pathBrowserPath.replace(/\/+$/, '');
+        pathInput.dispatchEvent(new Event('input'));
+    }
+    closeModal('pathBrowserModal');
+}
+
+async function createFolderInCurrentPath() {
+    const input = document.getElementById('newFolderName');
+    const name = (input?.value || '').trim();
+    if (!name) {
+        setPathBrowserError(pathBrowserText.createName);
+        return;
+    }
+
+    setPathBrowserError('');
+    try {
+        const body = new URLSearchParams({
+            csrf_token: pathBrowserCsrf(),
+            parent: pathBrowserPath,
+            name,
+        });
+        const response = await fetch('/samba/path-browser', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+            body,
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) throw new Error(payload.error || pathBrowserText.requestFailed);
+        if (input) input.value = '';
+        renderPathBrowser(pathBrowserPath, payload.directories || []);
+        loadPathBrowser(payload.path);
+    } catch (error) {
+        setPathBrowserError(error.message || pathBrowserText.requestFailed);
+    }
+}
 
 function normalizeShareSlug(value) {
     return value
