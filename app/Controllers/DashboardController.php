@@ -19,9 +19,9 @@ class DashboardController {
             if (in_array($action, ['start', 'stop', 'restart'])) {
                 $result = Shell::execSudo("/usr/bin/systemctl $action smbd");
                 if ($result['success']) {
-                    $_SESSION['message'] = "Serviço smbd executou a ação: $action com sucesso.";
+                    $_SESSION['message'] = smb_t("smbd service completed action $action successfully.", "Serviço smbd executou a ação $action com sucesso.");
                 } else {
-                    $_SESSION['error'] = "Erro na ação $action: " . $result['output'];
+                    $_SESSION['error'] = smb_t("Error while running action $action: ", "Erro ao executar a ação $action: ") . $result['output'];
                 }
             }
         }
@@ -59,7 +59,7 @@ class DashboardController {
                 $logs = array_reverse($logs); // Newest first
             }
         } catch (\Exception $e) {
-            $_SESSION['error'] = "Erro ao buscar logs: " . $e->getMessage();
+            $_SESSION['error'] = smb_t('Error while reading logs: ', 'Erro ao buscar logs: ') . $e->getMessage();
         }
         require __DIR__ . '/../Views/reports.php';
     }

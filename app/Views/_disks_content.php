@@ -1,18 +1,18 @@
 <div class="mb-8 flex items-center justify-between">
     <div class="flex items-baseline gap-4">
-        <h1 class="text-3xl font-brand font-bold text-fg tracking-tight">Storage</h1>
+        <h1 class="text-3xl font-brand font-bold text-fg tracking-tight"><?= smb_t('Storage', 'Armazenamento') ?></h1>
         <span class="text-sm text-muted font-mono tracking-wide">lsblk • mount • fstab</span>
     </div>
-    <a href="/disks" class="px-4 py-2 bg-transparent border border-bg0 text-fg hover:border-muted rounded-sm font-mono text-sm transition-colors">reload</a>
+    <a href="/disks" class="px-4 py-2 bg-transparent border border-bg0 text-fg hover:border-muted rounded-sm font-mono text-sm transition-colors"><?= smb_t('reload', 'recarregar') ?></a>
 </div>
 
 <div class="space-y-4 mb-8">
     <!-- Format Form -->
-    <form action="/disks" method="POST" class="flex flex-wrap items-center gap-4 bg-bg1 border border-bg0 px-4 py-3 rounded-sm font-mono text-sm" onsubmit="return confirm('WARNING: Formatting will permanently erase the disk. Continue?');">
+    <form action="/disks" method="POST" class="flex flex-wrap items-center gap-4 bg-bg1 border border-bg0 px-4 py-3 rounded-sm font-mono text-sm" onsubmit="return confirm('<?= htmlspecialchars(smb_t('WARNING: Formatting will permanently erase the disk. Continue?', 'AVISO: a formatação apagará permanentemente o disco. Continuar?')) ?>');">
         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
         <input type="hidden" name="action" value="format">
         
-        <span class="text-muted text-xs uppercase tracking-widest font-bold w-16">Format</span>
+        <span class="text-muted text-xs uppercase tracking-widest font-bold w-16"><?= smb_t('Format', 'Formatar') ?></span>
         <input type="text" name="device_path" placeholder="/dev/sdb" required class="w-48 bg-bg0 border border-bg0 text-fg px-3 py-1.5 focus:border-acc outline-none rounded-sm transition-colors">
         <input type="text" name="mount_name" placeholder="storage_nome" required pattern="[a-zA-Z0-9-]+" class="w-48 bg-bg0 border border-bg0 text-fg px-3 py-1.5 focus:border-acc outline-none rounded-sm transition-colors">
         
@@ -29,7 +29,7 @@
         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
         <input type="hidden" name="action" value="import">
         
-        <span class="text-muted text-xs uppercase tracking-widest font-bold w-16">Import</span>
+        <span class="text-muted text-xs uppercase tracking-widest font-bold w-16"><?= smb_t('Import', 'Importar') ?></span>
         <input type="text" name="device_path" placeholder="/dev/sdb1" required class="w-48 bg-bg0 border border-bg0 text-fg px-3 py-1.5 focus:border-acc outline-none rounded-sm transition-colors">
         <input type="text" name="mount_name" placeholder="backup" required pattern="[a-zA-Z0-9-]+" class="w-48 bg-bg0 border border-bg0 text-fg px-3 py-1.5 focus:border-acc outline-none rounded-sm transition-colors">
         
@@ -42,17 +42,17 @@
         <thead>
             <tr class="text-muted border-b border-bg0 text-xs uppercase tracking-wider">
                 <th class="px-6 py-4 font-normal">Dev</th>
-                <th class="px-6 py-4 font-normal">Size</th>
+                <th class="px-6 py-4 font-normal"><?= smb_t('Size', 'Tamanho') ?></th>
                 <th class="px-6 py-4 font-normal">FS</th>
-                <th class="px-6 py-4 font-normal">Mount</th>
-                <th class="px-6 py-4 font-normal">Status</th>
+                <th class="px-6 py-4 font-normal"><?= smb_t('Mount', 'Montagem') ?></th>
+                <th class="px-6 py-4 font-normal"><?= smb_t('Status', 'Status') ?></th>
                 <th class="px-6 py-4 font-normal text-right">Sys</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-bg0/50">
             <?php if (empty($disks)): ?>
                 <tr>
-                    <td colspan="6" class="px-6 py-8 text-center text-muted">No disks found or error parsing lsblk.</td>
+                    <td colspan="6" class="px-6 py-8 text-center text-muted"><?= smb_t('No disks found or error parsing lsblk.', 'Nenhum disco encontrado ou erro ao interpretar o lsblk.') ?></td>
                 </tr>
             <?php else: ?>
                 <?php foreach ($disks as $disk): ?>
@@ -61,21 +61,21 @@
                         
                         // Translating status for UI based on mockup
                         if ($disk['classification'] === 'Disco de Sistema' || $disk['mountpoint'] === '[SWAP]') {
-                            $statusText = 'Montado e em Uso';
+                            $statusText = smb_t('Mounted and in use', 'Montado e em uso');
                         } elseif ($disk['classification'] === 'Limpo (Virgem)') {
-                            $statusText = 'Limpo';
+                            $statusText = smb_t('Clean', 'Limpo');
                         } elseif ($disk['classification'] === 'Formatado Desmontado') {
-                            $statusText = 'Formatado mas Desmontado';
+                            $statusText = smb_t('Formatted but unmounted', 'Formatado, mas desmontado');
                         } elseif ($disk['classification'] === 'Montado') {
-                            $statusText = 'Montado e em Uso';
+                            $statusText = smb_t('Mounted and in use', 'Montado e em uso');
                         } else {
                             $statusText = $disk['classification'];
                         }
                         
                         $statusClass = 'border-bg0 text-muted';
-                        if (strpos($statusText, 'Montado') !== false) {
+                        if ($disk['classification'] === 'Disco de Sistema' || $disk['classification'] === 'Montado' || $disk['mountpoint'] === '[SWAP]') {
                             $statusClass = 'border-acc2/30 text-acc2 bg-acc2/5'; // Use acc2 for green/ok state from mockup
-                        } elseif (strpos($statusText, 'Formatado mas Desmontado') !== false) {
+                        } elseif ($disk['classification'] === 'Formatado Desmontado') {
                             $statusClass = 'border-acc2/30 text-acc2 bg-acc2/5'; // Mockup shows it green-ish too, but let's use slightly dimmer or same
                         }
                     ?>
@@ -93,11 +93,11 @@
                             <?php if ($isSys): ?>
                                 <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold border border-acc/30 text-acc bg-acc/5">sys</span>
                             <?php elseif ($disk['classification'] === 'Montado'): ?>
-                                <form action="/disks" method="POST" class="inline-block" onsubmit="return confirm('Eject this disk? It will be safely unmounted.');">
+                                <form action="/disks" method="POST" class="inline-block" onsubmit="return confirm('<?= htmlspecialchars(smb_t('Eject this disk? It will be safely unmounted.', 'Ejetar este disco? Ele será desmontado com segurança.')) ?>');">
                                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                                     <input type="hidden" name="action" value="eject">
                                     <input type="hidden" name="mountpoint" value="<?= htmlspecialchars($disk['mountpoint'] ?? '') ?>">
-                                    <button type="submit" class="px-2 py-1 bg-bg0 text-muted hover:border-err hover:text-err border border-bg0 transition-colors rounded-sm text-xs">eject</button>
+                                    <button type="submit" class="px-2 py-1 bg-bg0 text-muted hover:border-err hover:text-err border border-bg0 transition-colors rounded-sm text-xs"><?= smb_t('eject', 'ejetar') ?></button>
                                 </form>
                             <?php endif; ?>
                         </td>

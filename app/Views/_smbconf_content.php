@@ -9,16 +9,16 @@
 ?>
 <div class="flex justify-between items-baseline mb-8">
     <div class="flex items-baseline gap-4">
-        <h1 class="text-2xl font-brand font-bold text-fg">Global Settings</h1>
+        <h1 class="text-2xl font-brand font-bold text-fg"><?= smb_t('Global Settings', 'Configurações globais') ?></h1>
         <span class="text-sm text-muted font-mono">/etc/samba/smb.conf</span>
     </div>
     
     <div class="flex items-center gap-3 font-mono text-sm">
         <span class="text-muted">Audit (vfs_full_audit):</span>
         <?php if($hasAudit): ?>
-            <span class="px-2 py-0.5 bg-ok/10 text-ok border border-ok/20 rounded-sm text-xs shadow-[0_0_8px_rgba(111,174,122,0.15)]">ENABLED</span>
+            <span class="px-2 py-0.5 bg-ok/10 text-ok border border-ok/20 rounded-sm text-xs shadow-[0_0_8px_rgba(111,174,122,0.15)]"><?= smb_t('ENABLED', 'ATIVADA') ?></span>
         <?php else: ?>
-            <span class="px-2 py-0.5 bg-err/10 text-err border border-err/20 rounded-sm text-xs">DISABLED</span>
+            <span class="px-2 py-0.5 bg-err/10 text-err border border-err/20 rounded-sm text-xs"><?= smb_t('DISABLED', 'DESATIVADA') ?></span>
         <?php endif; ?>
     </div>
 </div>
@@ -65,7 +65,7 @@
                                     
                                     <!-- Toggle Ativar/Desativar (;) -->
                                     <div class="flex items-center gap-2 px-2 py-1 bg-bg1 border border-bg0 rounded-sm">
-                                        <span class="text-[10px] font-mono text-muted uppercase tracking-wider">Enable</span>
+                                        <span class="text-[10px] font-mono text-muted uppercase tracking-wider"><?= smb_t('Enable', 'Ativar') ?></span>
                                         <input type="hidden" name="config[<?= htmlspecialchars($section) ?>][<?= $idx ?>][enabled]" value="0">
                                         <input type="checkbox" name="config[<?= htmlspecialchars($section) ?>][<?= $idx ?>][enabled]" value="1" <?= !$disabled ? 'checked' : '' ?> 
                                             class="w-3.5 h-3.5 accent-acc cursor-pointer"
@@ -84,7 +84,7 @@
                                         <input type="hidden" name="config[<?= htmlspecialchars($section) ?>][<?= $idx ?>][value]" value="no">
                                         <label class="flex items-center gap-2 cursor-pointer">
                                             <input type="checkbox" name="config[<?= htmlspecialchars($section) ?>][<?= $idx ?>][value]" id="input-<?= md5($section.$idx) ?>" value="yes" class="accent-acc2 w-4 h-4" <?= $val === 'yes' ? 'checked' : '' ?> <?= $disabled ? 'disabled' : '' ?>>
-                                            <span class="text-xs font-mono text-fg">Yes (Enabled)</span>
+                                            <span class="text-xs font-mono text-fg"><?= smb_t('Yes (Enabled)', 'Sim (ativado)') ?></span>
                                         </label>
                                     <?php else: ?>
                                         <!-- Text Input -->
@@ -98,7 +98,7 @@
             <?php endforeach; ?>
         </div>
         <button type="submit" class="px-6 py-2.5 bg-acc text-bg0 font-medium hover:bg-acc/90 rounded-sm transition uppercase tracking-wider text-xs font-mono">
-            Save & Validate (testparm)
+            <?= smb_t('Save & Validate (testparm)', 'Salvar e validar (testparm)') ?>
         </button>
     </form>
 </div>

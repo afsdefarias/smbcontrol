@@ -1,16 +1,16 @@
 <div class="mb-8 flex items-baseline gap-4">
-    <h1 class="text-2xl font-brand font-bold text-fg">Usuarios e grupos SMB</h1>
-    <span class="text-sm text-muted font-mono">Linux + banco de senhas Samba</span>
+    <h1 class="text-2xl font-brand font-bold text-fg"><?= smb_t('SMB Users and Groups', 'Usuários e grupos SMB') ?></h1>
+    <span class="text-sm text-muted font-mono"><?= smb_t('Linux users + Samba password database', 'Usuários Linux + banco de senhas Samba') ?></span>
 </div>
 
 <div class="flex gap-4">
     <button onclick="openModal('userWizardModal')" class="px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        Criar usuario SMB
+        <?= smb_t('Create SMB User', 'Criar usuário SMB') ?>
     </button>
     <button onclick="openModal('groupWizardModal')" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        Criar grupo Linux
+        <?= smb_t('Create Linux Group', 'Criar grupo Linux') ?>
     </button>
 </div>
 
@@ -22,44 +22,44 @@
             <input type="hidden" name="action" value="create_user">
             
             <div class="p-4 border-b border-bg0 bg-bg0/50 flex justify-between items-center">
-                <h2 class="text-lg font-ui text-fg font-bold">Criar ou atualizar usuario Samba</h2>
+                <h2 class="text-lg font-ui text-fg font-bold"><?= smb_t('Create or update Samba user', 'Criar ou atualizar usuário Samba') ?></h2>
                 <button type="button" onclick="closeModal('userWizardModal')" class="text-muted hover:text-err transition">&times;</button>
             </div>
             
             <div class="flex border-b border-bg0 bg-bg0/30">
-                <button type="button" class="tab-btn active" data-tab="u-tab-info" onclick="switchTab('userWizardModal', 'u-tab-info')">Conta e senha</button>
-                <button type="button" class="tab-btn" data-tab="u-tab-groups" onclick="switchTab('userWizardModal', 'u-tab-groups')">Grupos</button>
+                <button type="button" class="tab-btn active" data-tab="u-tab-info" onclick="switchTab('userWizardModal', 'u-tab-info')"><?= smb_t('Account and password', 'Conta e senha') ?></button>
+                <button type="button" class="tab-btn" data-tab="u-tab-groups" onclick="switchTab('userWizardModal', 'u-tab-groups')"><?= smb_t('Groups', 'Grupos') ?></button>
             </div>
             
             <div id="u-tab-info" class="tab-pane active flex flex-col gap-4 min-h-[250px]">
                 <div class="flex flex-col gap-1">
-                    <label class="text-muted">Usuario Linux/Samba</label>
+                    <label class="text-muted"><?= smb_t('Linux/Samba username', 'Usuário Linux/Samba') ?></label>
                     <input type="text" name="username" required class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
                 </div>
                 <div class="flex flex-col gap-1">
-                    <label class="text-muted">Senha Samba <span class="text-xs opacity-70">(obrigatoria ao criar, opcional ao editar)</span></label>
-                    <input type="password" name="password" placeholder="Senha usada ao acessar o compartilhamento SMB" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+                    <label class="text-muted"><?= smb_t('Samba password', 'Senha Samba') ?> <span class="text-xs opacity-70"><?= smb_t('(required when creating, optional when editing)', '(obrigatória ao criar, opcional ao editar)') ?></span></label>
+                    <input type="password" name="password" placeholder="<?= htmlspecialchars(smb_t('Password used to access SMB shares', 'Senha usada para acessar compartilhamentos SMB')) ?>" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
                 </div>
                 <div class="flex flex-col gap-2 mt-2">
                     <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
                         <input type="checkbox" name="create_home" value="1" class="accent-acc w-4 h-4">
-                        <span class="text-fg text-xs">Criar pasta home no Linux (/home/usuario)</span>
+                        <span class="text-fg text-xs"><?= smb_t('Create Linux home directory (/home/user)', 'Criar pasta home no Linux (/home/usuário)') ?></span>
                     </label>
                     <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
                         <input type="checkbox" name="create_user_group" value="1" class="accent-acc w-4 h-4">
-                        <span class="text-fg text-xs">Criar grupo principal com o mesmo nome do usuario</span>
+                        <span class="text-fg text-xs"><?= smb_t('Create primary group with the same name as the user', 'Criar grupo principal com o mesmo nome do usuário') ?></span>
                     </label>
                 </div>
             </div>
             
             <div id="u-tab-groups" class="tab-pane hidden flex-col gap-4 min-h-[250px]">
-                <label class="text-muted">Adicionar aos grupos Linux selecionados (opcional)</label>
+                <label class="text-muted"><?= smb_t('Add to selected Linux groups (optional)', 'Adicionar aos grupos Linux selecionados (opcional)') ?></label>
                 <?php if (empty($systemGroups)): ?>
                     <div class="border border-bg0 rounded-sm p-3 flex-grow">
-                        <p class="text-muted text-xs">Nenhum grupo local encontrado (GID >= 1000).</p>
+                        <p class="text-muted text-xs"><?= smb_t('No local groups found (GID >= 1000).', 'Nenhum grupo local encontrado (GID >= 1000).') ?></p>
                     </div>
                 <?php else: ?>
-                    <div class="multi-select-container relative flex-grow" data-placeholder="Search groups..." data-accent="acc">
+                    <div class="multi-select-container relative flex-grow" data-placeholder="<?= htmlspecialchars(smb_t('Search groups...', 'Buscar grupos...')) ?>" data-accent="acc">
                         <select multiple name="groups[]" class="hidden">
                             <?php foreach ($systemGroups as $group): ?>
                                 <option value="<?= htmlspecialchars($group) ?>"><?= htmlspecialchars($group) ?></option>
@@ -70,8 +70,8 @@
             </div>
             
             <div class="p-4 border-t border-bg0 bg-bg0/50 flex justify-end gap-3 mt-auto">
-                <button type="button" onclick="closeModal('userWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-sm uppercase tracking-wider text-xs">Cancelar</button>
-                <button type="submit" class="px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs">Salvar usuario</button>
+                <button type="button" onclick="closeModal('userWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-sm uppercase tracking-wider text-xs"><?= smb_t('Cancel', 'Cancelar') ?></button>
+                <button type="submit" class="px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs"><?= smb_t('Save User', 'Salvar usuário') ?></button>
             </div>
         </form>
     </div>
@@ -85,30 +85,30 @@
             <input type="hidden" name="action" value="create_group">
             
             <div class="p-4 border-b border-bg0 bg-bg0/50 flex justify-between items-center">
-                <h2 class="text-lg font-ui text-fg font-bold">Criar ou atualizar grupo Linux</h2>
+                <h2 class="text-lg font-ui text-fg font-bold"><?= smb_t('Create or update Linux group', 'Criar ou atualizar grupo Linux') ?></h2>
                 <button type="button" onclick="closeModal('groupWizardModal')" class="text-muted hover:text-err transition">&times;</button>
             </div>
             
             <div class="flex border-b border-bg0 bg-bg0/30">
-                <button type="button" class="tab-btn active" data-tab="g-tab-info" onclick="switchTab('groupWizardModal', 'g-tab-info')">Grupo</button>
-                <button type="button" class="tab-btn" data-tab="g-tab-members" onclick="switchTab('groupWizardModal', 'g-tab-members')">Membros</button>
+                <button type="button" class="tab-btn active" data-tab="g-tab-info" onclick="switchTab('groupWizardModal', 'g-tab-info')"><?= smb_t('Group', 'Grupo') ?></button>
+                <button type="button" class="tab-btn" data-tab="g-tab-members" onclick="switchTab('groupWizardModal', 'g-tab-members')"><?= smb_t('Members', 'Membros') ?></button>
             </div>
             
             <div id="g-tab-info" class="tab-pane active flex flex-col gap-4 min-h-[250px]">
                 <div class="flex flex-col gap-1">
-                    <label class="text-muted">Nome do grupo</label>
-                    <input type="text" name="groupname" required placeholder="ex.: financeiro" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc2 transition-colors">
+                    <label class="text-muted"><?= smb_t('Group name', 'Nome do grupo') ?></label>
+                    <input type="text" name="groupname" required placeholder="<?= htmlspecialchars(smb_t('e.g. finance', 'ex.: financeiro')) ?>" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc2 transition-colors">
                 </div>
             </div>
             
             <div id="g-tab-members" class="tab-pane hidden flex-col gap-4 min-h-[250px]">
-                <label class="text-muted">Definir membros deste grupo (opcional)</label>
+                <label class="text-muted"><?= smb_t('Set group members (optional)', 'Definir membros deste grupo (opcional)') ?></label>
                 <?php if (empty($systemUsers)): ?>
                     <div class="border border-bg0 rounded-sm p-3 flex-grow">
-                        <p class="text-muted text-xs">Nenhum usuario local encontrado (UID >= 1000).</p>
+                        <p class="text-muted text-xs"><?= smb_t('No local users found (UID >= 1000).', 'Nenhum usuário local encontrado (UID >= 1000).') ?></p>
                     </div>
                 <?php else: ?>
-                    <div class="multi-select-container relative flex-grow" data-placeholder="Search users..." data-accent="acc2">
+                    <div class="multi-select-container relative flex-grow" data-placeholder="<?= htmlspecialchars(smb_t('Search users...', 'Buscar usuários...')) ?>" data-accent="acc2">
                         <select multiple name="users[]" class="hidden">
                             <?php foreach ($systemUsers as $usr): ?>
                                 <option value="<?= htmlspecialchars($usr) ?>"><?= htmlspecialchars($usr) ?></option>
@@ -119,8 +119,8 @@
             </div>
             
             <div class="p-4 border-t border-bg0 bg-bg0/50 flex justify-end gap-3 mt-auto">
-                <button type="button" onclick="closeModal('groupWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-sm uppercase tracking-wider text-xs">Cancelar</button>
-                <button type="submit" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs">Salvar grupo</button>
+                <button type="button" onclick="closeModal('groupWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-sm uppercase tracking-wider text-xs"><?= smb_t('Cancel', 'Cancelar') ?></button>
+                <button type="submit" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs"><?= smb_t('Save Group', 'Salvar grupo') ?></button>
             </div>
         </form>
     </div>
@@ -128,24 +128,24 @@
 
 <!-- Panel 3: Existing Users -->
 <div class="mt-6 bg-bg1 border border-bg0 p-6 rounded-sm">
-    <h2 class="text-lg font-ui text-fg mb-4 border-b border-bg0 pb-2">Usuarios cadastrados no Samba</h2>
+    <h2 class="text-lg font-ui text-fg mb-4 border-b border-bg0 pb-2"><?= smb_t('Samba users', 'Usuários cadastrados no Samba') ?></h2>
     
     <?php if ($sambaUsers === null): ?>
         <div class="bg-warn/10 border-l-4 border-warn p-4 text-sm font-mono text-warn">
-            <strong>Acao necessaria:</strong> o usuario <code>www-data</code> nao tem permissao para ler usuarios Samba. <br>
-            Adicione <code>/usr/bin/pdbedit</code> ao sudoers com NOPASSWD para listar e gerenciar usuarios.
+            <strong><?= smb_t('Action required:', 'Ação necessária:') ?></strong> <?= smb_t('the', 'o usuário') ?> <code>www-data</code> <?= smb_t('user cannot read Samba users.', 'não tem permissão para ler usuários Samba.') ?><br>
+            <?= smb_t('Add', 'Adicione') ?> <code>/usr/bin/pdbedit</code> <?= smb_t('to sudoers with NOPASSWD to list and manage users.', 'ao sudoers com NOPASSWD para listar e gerenciar usuários.') ?>
         </div>
     <?php elseif (empty($sambaUsers)): ?>
-        <p class="text-muted text-sm font-mono">Nenhum usuario Samba encontrado.</p>
+        <p class="text-muted text-sm font-mono"><?= smb_t('No Samba users found.', 'Nenhum usuário Samba encontrado.') ?></p>
     <?php else: ?>
         <div class="overflow-x-auto">
             <table class="w-full text-left font-mono text-sm">
                 <thead>
                     <tr class="text-muted border-b border-bg0">
-                        <th class="pb-2 font-normal">Usuario</th>
-                        <th class="pb-2 font-normal">Grupos Linux</th>
-                        <th class="pb-2 font-normal">Status Samba</th>
-                        <th class="pb-2 font-normal text-right">Acoes</th>
+                        <th class="pb-2 font-normal"><?= smb_t('User', 'Usuário') ?></th>
+                        <th class="pb-2 font-normal"><?= smb_t('Linux Groups', 'Grupos Linux') ?></th>
+                        <th class="pb-2 font-normal"><?= smb_t('Samba Status', 'Status Samba') ?></th>
+                        <th class="pb-2 font-normal text-right"><?= smb_t('Actions', 'Ações') ?></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-bg0/50">
@@ -168,29 +168,29 @@
                                             document.querySelector('#userWizardModal input[name=username]').readOnly = true;
                                             document.querySelector('#userWizardModal input[name=password]').placeholder = 'Leave blank to keep unchanged';
                                             openModal('userWizardModal');
-                                        ">Edit</button>
+                                        "><?= smb_t('Edit', 'Editar') ?></button>
                                 
                                 <?php if ($user['disabled']): ?>
                                     <form action="/samba/users" method="POST" class="inline-block">
                                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                                         <input type="hidden" name="action" value="enable_user">
                                         <input type="hidden" name="target_user" value="<?= htmlspecialchars($user['username']) ?>">
-                                        <button type="submit" class="px-2 py-1 bg-acc/10 text-acc border border-acc/20 hover:bg-acc hover:text-bg0 transition-colors rounded-sm text-xs">Enable</button>
+                                        <button type="submit" class="px-2 py-1 bg-acc/10 text-acc border border-acc/20 hover:bg-acc hover:text-bg0 transition-colors rounded-sm text-xs"><?= smb_t('Enable', 'Ativar') ?></button>
                                     </form>
                                 <?php else: ?>
                                     <form action="/samba/users" method="POST" class="inline-block">
                                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                                         <input type="hidden" name="action" value="disable_user">
                                         <input type="hidden" name="target_user" value="<?= htmlspecialchars($user['username']) ?>">
-                                        <button type="submit" class="px-2 py-1 bg-bg0 text-fg border border-bg0 hover:border-err hover:text-err transition-colors rounded-sm text-xs">Disable</button>
+                                        <button type="submit" class="px-2 py-1 bg-bg0 text-fg border border-bg0 hover:border-err hover:text-err transition-colors rounded-sm text-xs"><?= smb_t('Disable', 'Desativar') ?></button>
                                     </form>
                                 <?php endif; ?>
                                 
-                                <form action="/samba/users" method="POST" class="inline-block" onsubmit="return confirm('WARNING: This will permanently delete the user from Samba and the Linux system. Are you sure?');">
+                                <form action="/samba/users" method="POST" class="inline-block" onsubmit="return confirm('<?= htmlspecialchars(smb_t('WARNING: This will permanently delete the user from Samba and the Linux system. Are you sure?', 'AVISO: isso apagará permanentemente o usuário do Samba e do Linux. Tem certeza?')) ?>');">
                                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                                     <input type="hidden" name="action" value="delete_user">
                                     <input type="hidden" name="target_user" value="<?= htmlspecialchars($user['username']) ?>">
-                                    <button type="submit" class="px-2 py-1 bg-err/10 text-err border border-err/20 hover:bg-err hover:text-bg0 transition-colors rounded-sm text-xs">Delete</button>
+                                    <button type="submit" class="px-2 py-1 bg-err/10 text-err border border-err/20 hover:bg-err hover:text-bg0 transition-colors rounded-sm text-xs"><?= smb_t('Delete', 'Excluir') ?></button>
                                 </form>
                             </td>
                         </tr>
@@ -300,7 +300,7 @@ class MultiSelect {
         if (!hasVisible) {
             const empty = document.createElement('div');
             empty.className = 'px-3 py-2 text-sm text-muted italic';
-            empty.textContent = 'No more options';
+            empty.textContent = '<?= addslashes(smb_t('No more options', 'Sem mais opções')) ?>';
             this.dropdown.appendChild(empty);
         }
     }

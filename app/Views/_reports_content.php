@@ -1,5 +1,5 @@
 <div class="mb-8 flex items-baseline gap-4">
-    <h1 class="text-2xl font-brand font-bold text-fg">Audit Reports</h1>
+    <h1 class="text-2xl font-brand font-bold text-fg"><?= smb_t('Audit Reports', 'Relatórios de auditoria') ?></h1>
     <span class="text-sm text-muted font-mono">vfs_full_audit</span>
 </div>
 
@@ -8,17 +8,17 @@
         <table class="w-full text-left text-xs font-mono whitespace-nowrap">
             <thead class="text-muted tracking-wider border-b border-bg0">
                 <tr>
-                    <th class="px-4 py-3 font-medium uppercase">When</th>
+                    <th class="px-4 py-3 font-medium uppercase"><?= smb_t('When', 'Quando') ?></th>
                     <th class="px-4 py-3 font-medium uppercase">IP</th>
-                    <th class="px-4 py-3 font-medium uppercase">User</th>
-                    <th class="px-4 py-3 font-medium uppercase">Op</th>
-                    <th class="px-4 py-3 font-medium uppercase w-full">File</th>
+                    <th class="px-4 py-3 font-medium uppercase"><?= smb_t('User', 'Usuário') ?></th>
+                    <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Op', 'Operação') ?></th>
+                    <th class="px-4 py-3 font-medium uppercase w-full"><?= smb_t('File', 'Arquivo') ?></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-bg0">
                 <?php if (empty($logs)): ?>
                     <tr>
-                        <td colspan="5" class="px-4 py-8 text-center text-muted italic">No audit records found.</td>
+                        <td colspan="5" class="px-4 py-8 text-center text-muted italic"><?= smb_t('No audit records found.', 'Nenhum registro de auditoria encontrado.') ?></td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($logs as $log): ?>

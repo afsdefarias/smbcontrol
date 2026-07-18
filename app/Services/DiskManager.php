@@ -59,7 +59,7 @@ class DiskManager {
     public static function formatDisk(string $devicePath, string $fsType, string $mountName): array {
         // Validação de segurança rígida do nome da montagem (apenas letras, números e hífens)
         if (!preg_match('/^[a-zA-Z0-9-]+$/', $mountName)) {
-            throw new \Exception("Nome de montagem inválido. Use apenas letras, números e hífens.");
+            throw new \Exception(\smb_t('Invalid mount name. Use only letters, numbers, and hyphens.', 'Nome de montagem inválido. Use apenas letras, números e hífens.'));
         }
         
         $fsType = in_array($fsType, ['ext4', 'xfs']) ? $fsType : 'ext4';
@@ -70,7 +70,7 @@ class DiskManager {
         // Formatar
         $fmtRes = Shell::execSudo("/usr/sbin/mkfs.$fsType $devEsc");
         if (!$fmtRes['success']) {
-            throw new \Exception("Erro ao formatar o disco: " . $fmtRes['output']);
+            throw new \Exception(\smb_t('Error while formatting disk: ', 'Erro ao formatar o disco: ') . $fmtRes['output']);
         }
         
         // Criar pasta de montagem
@@ -80,13 +80,13 @@ class DiskManager {
         $uuidRes = Shell::execSudo("/usr/sbin/blkid -s UUID -o value $devEsc");
         $uuid = trim($uuidRes['output']);
         if (empty($uuid)) {
-            throw new \Exception("Falha ao obter o UUID após a formatação.");
+            throw new \Exception(\smb_t('Failed to get UUID after formatting.', 'Falha ao obter o UUID após a formatação.'));
         }
         
         // Montar
         $mountRes = Shell::execSudo("/usr/bin/mount $devEsc $mntPath");
         if (!$mountRes['success']) {
-            throw new \Exception("Erro ao montar o disco: " . $mountRes['output']);
+            throw new \Exception(\smb_t('Error while mounting disk: ', 'Erro ao montar o disco: ') . $mountRes['output']);
         }
         
         // Adicionar ao fstab (garantindo que o FSTAB fique integro)
@@ -94,7 +94,7 @@ class DiskManager {
         $fstabEsc = escapeshellarg($fstabLine);
         Shell::execSudo("sh -c 'echo $fstabEsc >> /etc/fstab'");
         
-        return ['success' => true, 'message' => "Disco formatado e montado em /mnt/$mountName."];
+        return ['success' => true, 'message' => \smb_t("Disk formatted and mounted at /mnt/$mountName.", "Disco formatado e montado em /mnt/$mountName.")];
     }
 
     /**
@@ -102,7 +102,7 @@ class DiskManager {
      */
     public static function importDisk(string $devicePath, string $mountName): array {
         if (!preg_match('/^[a-zA-Z0-9-]+$/', $mountName)) {
-            throw new \Exception("Nome de montagem inválido. Use apenas letras, números e hífens.");
+            throw new \Exception(\smb_t('Invalid mount name. Use only letters, numbers, and hyphens.', 'Nome de montagem inválido. Use apenas letras, números e hífens.'));
         }
         
         $devEsc = escapeshellarg($devicePath);
@@ -111,7 +111,7 @@ class DiskManager {
         // Obter UUID e FSTYPE
         $blkidRes = Shell::execSudo("/usr/sbin/blkid -s UUID -s TYPE -o export $devEsc");
         if (!$blkidRes['success'] || empty($blkidRes['output'])) {
-            throw new \Exception("Não foi possível identificar o sistema de arquivos do disco.");
+            throw new \Exception(\smb_t('Could not identify disk filesystem.', 'Não foi possível identificar o sistema de arquivos do disco.'));
         }
         
         $uuid = '';
@@ -126,21 +126,21 @@ class DiskManager {
         }
         
         if (empty($uuid) || empty($fsType)) {
-            throw new \Exception("Dados UUID ou TYPE ausentes no disco.");
+            throw new \Exception(\smb_t('Missing UUID or TYPE data on disk.', 'Dados UUID ou TYPE ausentes no disco.'));
         }
         
         Shell::execSudo("/usr/bin/mkdir -p $mntPath");
         
         $mountRes = Shell::execSudo("/usr/bin/mount $devEsc $mntPath");
         if (!$mountRes['success']) {
-            throw new \Exception("Erro ao importar e montar o disco: " . $mountRes['output']);
+            throw new \Exception(\smb_t('Error while importing and mounting disk: ', 'Erro ao importar e montar o disco: ') . $mountRes['output']);
         }
         
         $fstabLine = "UUID=$uuid /mnt/$mountName $fsType defaults 0 2";
         $fstabEsc = escapeshellarg($fstabLine);
         Shell::execSudo("sh -c 'echo $fstabEsc >> /etc/fstab'");
         
-        return ['success' => true, 'message' => "Disco importado com sucesso em /mnt/$mountName."];
+        return ['success' => true, 'message' => \smb_t("Disk imported successfully at /mnt/$mountName.", "Disco importado com sucesso em /mnt/$mountName.")];
     }
 
     /**
@@ -149,7 +149,7 @@ class DiskManager {
     public static function ejectDisk(string $mountPoint): array {
         // REGRA DE OURO: Validação rígida!
         if (!str_starts_with($mountPoint, '/mnt/')) {
-            throw new \Exception("OPERAÇÃO NEGADA. Proteção de sistema ativa: Só é permitido ejetar discos localizados dentro de /mnt/.");
+            throw new \Exception(\smb_t('OPERATION DENIED. System protection is active: only disks mounted under /mnt/ can be ejected.', 'OPERAÇÃO NEGADA. Proteção de sistema ativa: só é permitido ejetar discos localizados dentro de /mnt/.'));
         }
         
         // Remover trailing slashes que podem bugar o sed
@@ -159,7 +159,7 @@ class DiskManager {
         // 1. Desmontar o disco
         $umountRes = Shell::execSudo("/usr/bin/umount $mntEsc");
         if (!$umountRes['success']) {
-            throw new \Exception("Falha ao desmontar o diretório: " . $umountRes['output']);
+            throw new \Exception(\smb_t('Failed to unmount directory: ', 'Falha ao desmontar o diretório: ') . $umountRes['output']);
         }
         
         // 2. Remover do fstab
@@ -170,6 +170,6 @@ class DiskManager {
         // 3. Remover diretório
         Shell::execSudo("/usr/bin/rmdir $mntEsc");
         
-        return ['success' => true, 'message' => "Disco ejetado com segurança de $mountPoint."];
+        return ['success' => true, 'message' => \smb_t("Disk safely ejected from $mountPoint.", "Disco ejetado com segurança de $mountPoint.")];
     }
 }

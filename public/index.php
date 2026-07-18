@@ -8,6 +8,7 @@ header("Strict-Transport-Security: max-age=31536000; includeSubDomains"); // Rec
 require_once __DIR__ . '/../app/Models/Database.php';
 require_once __DIR__ . '/../app/Services/Shell.php';
 require_once __DIR__ . '/../app/Services/SambaParser.php';
+require_once __DIR__ . '/../app/Services/I18n.php';
 require_once __DIR__ . '/../app/Controllers/AuthController.php';
 require_once __DIR__ . '/../app/Controllers/DashboardController.php';
 require_once __DIR__ . '/../app/Controllers/SambaController.php';
@@ -26,6 +27,13 @@ session_set_cookie_params([
 ]);
 
 session_start();
+
+if (isset($_GET['lang']) && in_array($_GET['lang'], ['en', 'pt'], true)) {
+    $_SESSION['lang'] = $_GET['lang'];
+    $redirectPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/dashboard';
+    header('Location: ' . $redirectPath);
+    exit;
+}
 
 // Geração do CSRF Token
 if (empty($_SESSION['csrf_token'])) {

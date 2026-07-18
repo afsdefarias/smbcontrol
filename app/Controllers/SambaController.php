@@ -41,26 +41,26 @@ class SambaController {
     private function runSudo(string $command, string $label): array {
         $result = Shell::execSudo($command);
         if (!$result['success']) {
-            throw new \RuntimeException($label . ': ' . ($result['output'] ?: 'comando falhou sem saida.'));
+            throw new \RuntimeException($label . ': ' . ($result['output'] ?: smb_t('command failed without output.', 'comando falhou sem saída.')));
         }
         return $result;
     }
 
     private function readRootFile(string $path): string {
-        $result = $this->runSudo('/usr/bin/cat ' . escapeshellarg($path), "Nao foi possivel ler $path");
+        $result = $this->runSudo('/usr/bin/cat ' . escapeshellarg($path), smb_t("Could not read $path", "Não foi possível ler $path"));
         return $result['output'];
     }
 
     private function writeRootFile(string $path, string $content): void {
         $tmp = '/tmp/smbcontrol_' . bin2hex(random_bytes(8));
         file_put_contents($tmp, $content);
-        $this->runSudo('/usr/bin/cp ' . escapeshellarg($tmp) . ' ' . escapeshellarg($path), "Nao foi possivel gravar $path");
+        $this->runSudo('/usr/bin/cp ' . escapeshellarg($tmp) . ' ' . escapeshellarg($path), smb_t("Could not write $path", "Não foi possível gravar $path"));
         @unlink($tmp);
     }
 
     private function validateAndReload(): void {
-        $this->runSudo('/usr/bin/testparm -s', 'Configuracao Samba invalida');
-        $this->runSudo('/usr/bin/systemctl reload smbd', 'Nao foi possivel recarregar o smbd');
+        $this->runSudo('/usr/bin/testparm -s', smb_t('Invalid Samba configuration', 'Configuração Samba inválida'));
+        $this->runSudo('/usr/bin/systemctl reload smbd', smb_t('Could not reload smbd', 'Não foi possível recarregar o smbd'));
     }
 
     private function isValidAccountName(string $name): bool {
@@ -83,7 +83,7 @@ class SambaController {
     }
 
     private function ensureSharesConfig(): void {
-        $this->runSudo('/usr/bin/touch ' . escapeshellarg(self::SHARES_CONF), 'Nao foi possivel criar shares.conf');
+        $this->runSudo('/usr/bin/touch ' . escapeshellarg(self::SHARES_CONF), smb_t('Could not create shares.conf', 'Não foi possível criar shares.conf'));
 
         $content = $this->readRootFile(self::SMB_CONF);
         if ($this->sharesIncludeEnabled()) {
@@ -109,8 +109,8 @@ class SambaController {
         $newContent = rtrim(implode("\n", $newLines)) . "\n";
         $tmp = '/tmp/smbcontrol_smb_' . bin2hex(random_bytes(8));
         file_put_contents($tmp, $newContent);
-        $this->runSudo('/usr/bin/testparm -s ' . escapeshellarg($tmp), 'smb.conf com include invalido');
-        $this->runSudo('/usr/bin/cp ' . escapeshellarg($tmp) . ' ' . escapeshellarg(self::SMB_CONF), 'Nao foi possivel atualizar smb.conf');
+        $this->runSudo('/usr/bin/testparm -s ' . escapeshellarg($tmp), smb_t('smb.conf with include is invalid', 'smb.conf com include inválido'));
+        $this->runSudo('/usr/bin/cp ' . escapeshellarg($tmp) . ' ' . escapeshellarg(self::SMB_CONF), smb_t('Could not update smb.conf', 'Não foi possível atualizar smb.conf'));
         @unlink($tmp);
     }
 
@@ -124,11 +124,11 @@ class SambaController {
 
         try {
             if (file_put_contents($tmpPass, $password . "\n" . $password . "\n", LOCK_EX) === false) {
-                throw new \RuntimeException('Nao foi possivel criar arquivo temporario da senha Samba.');
+                throw new \RuntimeException(smb_t('Could not create temporary Samba password file.', 'Não foi possível criar o arquivo temporário da senha Samba.'));
             }
             chmod($tmpPass, 0600);
-            $this->runSudo("/usr/bin/smbpasswd -a -s $userEsc < " . escapeshellarg($tmpPass), 'Nao foi possivel gravar a senha Samba');
-            $this->runSudo("/usr/bin/smbpasswd -e $userEsc", 'Nao foi possivel ativar o usuario Samba');
+            $this->runSudo("/usr/bin/smbpasswd -a -s $userEsc < " . escapeshellarg($tmpPass), smb_t('Could not save Samba password', 'Não foi possível gravar a senha Samba'));
+            $this->runSudo("/usr/bin/smbpasswd -e $userEsc", smb_t('Could not enable Samba user', 'Não foi possível ativar o usuário Samba'));
         } finally {
             if (is_file($tmpPass)) {
                 @unlink($tmpPass);
@@ -155,7 +155,7 @@ class SambaController {
                 try {
                     $this->writeRootFile(self::SMB_CONF, $newContent);
                     $this->validateAndReload();
-                    $_SESSION['message'] = 'Configuracao global salva, validada pelo testparm e aplicada ao smbd.';
+                    $_SESSION['message'] = smb_t('Global configuration saved, validated by testparm, and applied to smbd.', 'Configuração global salva, validada pelo testparm e aplicada ao smbd.');
                     @unlink($tempFile);
                     header('Location: /samba/conf');
                     exit;
@@ -163,7 +163,7 @@ class SambaController {
                     $_SESSION['error'] = $e->getMessage();
                 }
             } else {
-                $_SESSION['error'] = 'Erro de validacao (testparm): ' . $testResult['output'];
+                $_SESSION['error'] = smb_t('Validation error (testparm): ', 'Erro de validação (testparm): ') . $testResult['output'];
             }
             $content = $newContent;
         }
@@ -191,14 +191,14 @@ class SambaController {
                 $testResult = Shell::execSudo('/usr/bin/testparm -s');
 
                 if ($testResult['success']) {
-                    $this->runSudo('/usr/bin/systemctl reload smbd', 'Nao foi possivel recarregar o smbd');
-                    $_SESSION['message'] = 'Parametros dos compartilhamentos salvos, validados e aplicados ao Samba.';
+                    $this->runSudo('/usr/bin/systemctl reload smbd', smb_t('Could not reload smbd', 'Não foi possível recarregar o smbd'));
+                    $_SESSION['message'] = smb_t('Share parameters saved, validated, and applied to Samba.', 'Parâmetros dos compartilhamentos salvos, validados e aplicados ao Samba.');
                     header('Location: /samba/shares-config');
                     exit;
                 }
 
                 $this->writeRootFile(self::SHARES_CONF, $backup);
-                $_SESSION['error'] = 'Erro de validacao (testparm): ' . $testResult['output'];
+                $_SESSION['error'] = smb_t('Validation error (testparm): ', 'Erro de validação (testparm): ') . $testResult['output'];
                 $content = $newContent;
             } catch (\Exception $e) {
                 $_SESSION['error'] = $e->getMessage();
@@ -229,18 +229,18 @@ class SambaController {
                 if ($action === 'delete') {
                     $shareName = $_POST['share_name'] ?? '';
                     if (!$this->isValidAccountName($shareName)) {
-                        throw new \InvalidArgumentException('Nome de compartilhamento invalido.');
+                        throw new \InvalidArgumentException(smb_t('Invalid share name.', 'Nome de compartilhamento inválido.'));
                     }
 
                     $parsed = SambaParser::parse($this->readRootFile(self::SHARES_CONF));
                     if (!isset($parsed[$shareName])) {
-                        throw new \InvalidArgumentException("Compartilhamento $shareName nao existe no shares.conf.");
+                        throw new \InvalidArgumentException(smb_t("Share $shareName does not exist in shares.conf.", "O compartilhamento $shareName não existe no shares.conf."));
                     }
 
                     unset($parsed[$shareName]);
                     $this->writeRootFile(self::SHARES_CONF, SambaParser::generate($parsed));
                     $this->validateAndReload();
-                    $_SESSION['message'] = "Compartilhamento $shareName removido do shares.conf e aplicado ao Samba.";
+                    $_SESSION['message'] = smb_t("Share $shareName removed from shares.conf and applied to Samba.", "Compartilhamento $shareName removido do shares.conf e aplicado ao Samba.");
                     header('Location: /samba/shares');
                     exit;
                 }
@@ -251,23 +251,23 @@ class SambaController {
                 $ownerGroup = $_POST['owner_group'] ?? 'root';
 
                 if (!$this->isValidAccountName($name)) {
-                    throw new \InvalidArgumentException('Nome invalido. Use apenas letras, numeros, ponto, hifen e sublinhado.');
+                    throw new \InvalidArgumentException(smb_t('Invalid name. Use only letters, numbers, dot, hyphen, and underscore.', 'Nome inválido. Use apenas letras, números, ponto, hífen e sublinhado.'));
                 }
                 if ($path === '' || strpos($path, '..') !== false || !str_starts_with($path, '/')) {
-                    throw new \InvalidArgumentException("Caminho invalido. Use um caminho absoluto e sem '..'.");
+                    throw new \InvalidArgumentException(smb_t("Invalid path. Use an absolute path without '..'.", "Caminho inválido. Use um caminho absoluto e sem '..'."));
                 }
                 if (!in_array($ownerUser, $systemUsers, true) || !in_array($ownerGroup, $systemGroups, true)) {
-                    throw new \InvalidArgumentException('Usuario ou grupo dono invalido.');
+                    throw new \InvalidArgumentException(smb_t('Invalid owner user or group.', 'Usuário ou grupo dono inválido.'));
                 }
 
                 $pathEsc = escapeshellarg($path);
                 $owner = escapeshellarg($ownerUser . ':' . $ownerGroup);
 
-                $this->runSudo("/usr/bin/mkdir -p $pathEsc", 'Nao foi possivel criar a pasta Linux');
-                $this->runSudo("/usr/bin/chown $owner $pathEsc", 'Nao foi possivel ajustar o dono da pasta');
-                $this->runSudo("/usr/bin/chmod 0770 $pathEsc", 'Nao foi possivel ajustar o modo da pasta');
-                $this->runSudo("/usr/bin/setfacl -b $pathEsc", 'Nao foi possivel limpar ACLs antigas');
-                $this->runSudo('/usr/bin/setfacl -m ' . escapeshellarg("u:$ownerUser:rwx") . ' -m ' . escapeshellarg("g:$ownerGroup:rwx") . ' ' . $pathEsc, 'Nao foi possivel aplicar ACL do dono');
+                $this->runSudo("/usr/bin/mkdir -p $pathEsc", smb_t('Could not create Linux folder', 'Não foi possível criar a pasta Linux'));
+                $this->runSudo("/usr/bin/chown $owner $pathEsc", smb_t('Could not set folder owner', 'Não foi possível ajustar o dono da pasta'));
+                $this->runSudo("/usr/bin/chmod 0770 $pathEsc", smb_t('Could not set folder mode', 'Não foi possível ajustar o modo da pasta'));
+                $this->runSudo("/usr/bin/setfacl -b $pathEsc", smb_t('Could not clear old ACLs', 'Não foi possível limpar ACLs antigas'));
+                $this->runSudo('/usr/bin/setfacl -m ' . escapeshellarg("u:$ownerUser:rwx") . ' -m ' . escapeshellarg("g:$ownerGroup:rwx") . ' ' . $pathEsc, smb_t('Could not apply owner ACL', 'Não foi possível aplicar ACL do dono'));
 
                 $readList = [];
                 $writeList = [];
@@ -279,7 +279,7 @@ class SambaController {
                     $acl = $perm === 'write' ? 'rwx' : 'rx';
                     $targetList = $perm === 'write' ? 'writeList' : 'readList';
                     ${$targetList}[] = $usr;
-                    $this->runSudo('/usr/bin/setfacl -m ' . escapeshellarg("u:$usr:$acl") . ' -m ' . escapeshellarg("d:u:$usr:$acl") . ' ' . $pathEsc, "Nao foi possivel aplicar ACL do usuario $usr");
+                    $this->runSudo('/usr/bin/setfacl -m ' . escapeshellarg("u:$usr:$acl") . ' -m ' . escapeshellarg("d:u:$usr:$acl") . ' ' . $pathEsc, smb_t("Could not apply ACL for user $usr", "Não foi possível aplicar ACL do usuário $usr"));
                 }
 
                 foreach (($_POST['group_perms'] ?? []) as $grp => $perm) {
@@ -289,7 +289,7 @@ class SambaController {
                     $acl = $perm === 'write' ? 'rwx' : 'rx';
                     $targetList = $perm === 'write' ? 'writeList' : 'readList';
                     ${$targetList}[] = '@' . $grp;
-                    $this->runSudo('/usr/bin/setfacl -m ' . escapeshellarg("g:$grp:$acl") . ' -m ' . escapeshellarg("d:g:$grp:$acl") . ' ' . $pathEsc, "Nao foi possivel aplicar ACL do grupo $grp");
+                    $this->runSudo('/usr/bin/setfacl -m ' . escapeshellarg("g:$grp:$acl") . ' -m ' . escapeshellarg("d:g:$grp:$acl") . ' ' . $pathEsc, smb_t("Could not apply ACL for group $grp", "Não foi possível aplicar ACL do grupo $grp"));
                 }
 
                 $validUsers = array_merge($readList, $writeList);
@@ -349,7 +349,7 @@ class SambaController {
                 $this->writeRootFile(self::SHARES_CONF, SambaParser::generate($parsed));
                 $this->validateAndReload();
 
-                $_SESSION['message'] = "Compartilhamento $name criado/atualizado em shares.conf, pasta criada em $path e smbd recarregado.";
+                $_SESSION['message'] = smb_t("Share $name created/updated in shares.conf, folder created at $path, and smbd reloaded.", "Compartilhamento $name criado/atualizado em shares.conf, pasta criada em $path e smbd recarregado.");
                 header('Location: /samba/shares');
                 exit;
             } catch (\Exception $e) {
@@ -386,19 +386,19 @@ class SambaController {
                     $groups = $_POST['groups'] ?? [];
 
                     if (!$this->isValidAccountName($username)) {
-                        throw new \InvalidArgumentException('Nome de usuario invalido.');
+                        throw new \InvalidArgumentException(smb_t('Invalid username.', 'Nome de usuário inválido.'));
                     }
 
                     $userExists = $this->linuxUserExists($username);
                     if (!$userExists && $password === '') {
-                        throw new \InvalidArgumentException('Informe uma senha para criar o usuario Samba.');
+                        throw new \InvalidArgumentException(smb_t('Enter a password to create the Samba user.', 'Informe uma senha para criar o usuário Samba.'));
                     }
 
                     $userEsc = escapeshellarg($username);
                     if (!$userExists) {
                         $mFlag = isset($_POST['create_home']) && $_POST['create_home'] == '1' ? '-m' : '-M';
                         $nFlag = isset($_POST['create_user_group']) && $_POST['create_user_group'] == '1' ? '-U' : '-N';
-                        $this->runSudo("/usr/sbin/useradd $nFlag $mFlag -s /usr/sbin/nologin $userEsc", 'Nao foi possivel criar o usuario Linux');
+                        $this->runSudo("/usr/sbin/useradd $nFlag $mFlag -s /usr/sbin/nologin $userEsc", smb_t('Could not create Linux user', 'Não foi possível criar o usuário Linux'));
                     }
 
                     $validGroups = [];
@@ -409,14 +409,14 @@ class SambaController {
                     }
                     if (!empty($validGroups)) {
                         $groupsStr = escapeshellarg(implode(',', $validGroups));
-                        $this->runSudo("/usr/sbin/usermod -a -G $groupsStr $userEsc", 'Nao foi possivel adicionar o usuario aos grupos');
+                        $this->runSudo("/usr/sbin/usermod -a -G $groupsStr $userEsc", smb_t('Could not add user to groups', 'Não foi possível adicionar o usuário aos grupos'));
                     }
 
                     if ($password !== '') {
                         $this->setSambaPassword($username, $password);
-                        $_SESSION['message'] = "Usuario $username criado/atualizado no Linux e no Samba.";
+                        $_SESSION['message'] = smb_t("User $username created/updated in Linux and Samba.", "Usuário $username criado/atualizado no Linux e no Samba.");
                     } else {
-                        $_SESSION['message'] = "Usuario $username atualizado nos grupos Linux. Senha Samba mantida.";
+                        $_SESSION['message'] = smb_t("User $username updated in Linux groups. Samba password kept unchanged.", "Usuário $username atualizado nos grupos Linux. Senha Samba mantida.");
                     }
 
                     header('Location: /samba/users');
@@ -428,12 +428,12 @@ class SambaController {
                     $users = $_POST['users'] ?? [];
 
                     if (!$this->isValidAccountName($groupname)) {
-                        throw new \InvalidArgumentException('Nome de grupo invalido.');
+                        throw new \InvalidArgumentException(smb_t('Invalid group name.', 'Nome de grupo inválido.'));
                     }
 
                     $groupEsc = escapeshellarg($groupname);
                     if (!$this->linuxGroupExists($groupname)) {
-                        $this->runSudo("/usr/sbin/groupadd $groupEsc", 'Nao foi possivel criar o grupo Linux');
+                        $this->runSudo("/usr/sbin/groupadd $groupEsc", smb_t('Could not create Linux group', 'Não foi possível criar o grupo Linux'));
                     }
 
                     $validUsers = [];
@@ -444,10 +444,10 @@ class SambaController {
                     }
                     if (!empty($validUsers)) {
                         $usersStr = escapeshellarg(implode(',', $validUsers));
-                        $this->runSudo("/usr/bin/gpasswd -M $usersStr $groupEsc", 'Nao foi possivel atualizar membros do grupo');
+                        $this->runSudo("/usr/bin/gpasswd -M $usersStr $groupEsc", smb_t('Could not update group members', 'Não foi possível atualizar membros do grupo'));
                     }
 
-                    $_SESSION['message'] = "Grupo $groupname criado/atualizado no Linux.";
+                    $_SESSION['message'] = smb_t("Group $groupname created/updated in Linux.", "Grupo $groupname criado/atualizado no Linux.");
                     header('Location: /samba/users');
                     exit;
                 }
@@ -455,20 +455,20 @@ class SambaController {
                 if (in_array($action, ['delete_user', 'enable_user', 'disable_user'], true)) {
                     $targetUser = $_POST['target_user'] ?? '';
                     if (!in_array($targetUser, $systemUsers, true)) {
-                        throw new \InvalidArgumentException('Usuario invalido ou nao encontrado.');
+                        throw new \InvalidArgumentException(smb_t('Invalid user or user not found.', 'Usuário inválido ou não encontrado.'));
                     }
                     $userEsc = escapeshellarg($targetUser);
 
                     if ($action === 'delete_user') {
-                        $this->runSudo("/usr/bin/smbpasswd -x $userEsc", 'Nao foi possivel remover o usuario do Samba');
-                        $this->runSudo("/usr/sbin/userdel -r $userEsc", 'Nao foi possivel remover o usuario Linux');
-                        $_SESSION['message'] = "Usuario $targetUser removido do Samba e do Linux.";
+                        $this->runSudo("/usr/bin/smbpasswd -x $userEsc", smb_t('Could not remove Samba user', 'Não foi possível remover o usuário do Samba'));
+                        $this->runSudo("/usr/sbin/userdel -r $userEsc", smb_t('Could not remove Linux user', 'Não foi possível remover o usuário Linux'));
+                        $_SESSION['message'] = smb_t("User $targetUser removed from Samba and Linux.", "Usuário $targetUser removido do Samba e do Linux.");
                     } elseif ($action === 'enable_user') {
-                        $this->runSudo("/usr/bin/smbpasswd -e $userEsc", 'Nao foi possivel ativar o usuario Samba');
-                        $_SESSION['message'] = "Usuario $targetUser ativado no Samba.";
+                        $this->runSudo("/usr/bin/smbpasswd -e $userEsc", smb_t('Could not enable Samba user', 'Não foi possível ativar o usuário Samba'));
+                        $_SESSION['message'] = smb_t("User $targetUser enabled in Samba.", "Usuário $targetUser ativado no Samba.");
                     } else {
-                        $this->runSudo("/usr/bin/smbpasswd -d $userEsc", 'Nao foi possivel desativar o usuario Samba');
-                        $_SESSION['message'] = "Usuario $targetUser desativado no Samba.";
+                        $this->runSudo("/usr/bin/smbpasswd -d $userEsc", smb_t('Could not disable Samba user', 'Não foi possível desativar o usuário Samba'));
+                        $_SESSION['message'] = smb_t("User $targetUser disabled in Samba.", "Usuário $targetUser desativado no Samba.");
                     }
                     header('Location: /samba/users');
                     exit;

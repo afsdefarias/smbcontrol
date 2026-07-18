@@ -27,13 +27,13 @@ class ProfileController {
                         exit;
                     } catch (\PDOException $e) {
                         if ($e->getCode() == 23000) {
-                            $_SESSION['error'] = "Esse nome de usuário já existe.";
+                            $_SESSION['error'] = smb_t('This username already exists.', 'Esse nome de usuário já existe.');
                         } else {
-                            $_SESSION['error'] = "Erro ao atualizar perfil: " . $e->getMessage();
+                            $_SESSION['error'] = smb_t('Error while updating profile: ', 'Erro ao atualizar perfil: ') . $e->getMessage();
                         }
                     }
                 } else {
-                    $_SESSION['error'] = "Preencha o nome de usuário e a nova senha.";
+                    $_SESSION['error'] = smb_t('Enter the username and new password.', 'Preencha o nome de usuário e a nova senha.');
                 }
                 
                 header('Location: /profile');
@@ -51,16 +51,16 @@ class ProfileController {
                         $stmt = $db->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
                         $stmt->execute([$newUsername, $hash]);
                         
-                        $_SESSION['message'] = "Novo acesso ($newUsername) criado com sucesso.";
+                        $_SESSION['message'] = smb_t("New access ($newUsername) created successfully.", "Novo acesso ($newUsername) criado com sucesso.");
                     } catch (\PDOException $e) {
                         if ($e->getCode() == 23000) {
-                            $_SESSION['error'] = "Esse nome de usuário já existe.";
+                            $_SESSION['error'] = smb_t('This username already exists.', 'Esse nome de usuário já existe.');
                         } else {
-                            $_SESSION['error'] = "Erro ao criar acesso: " . $e->getMessage();
+                            $_SESSION['error'] = smb_t('Error while creating access: ', 'Erro ao criar acesso: ') . $e->getMessage();
                         }
                     }
                 } else {
-                    $_SESSION['error'] = "Preencha o nome de usuário e a senha.";
+                    $_SESSION['error'] = smb_t('Enter the username and password.', 'Preencha o nome de usuário e a senha.');
                 }
                 
                 header('Location: /profile');
@@ -74,12 +74,12 @@ class ProfileController {
                         $stmt = $db->prepare("DELETE FROM users WHERE id = ?");
                         $stmt->execute([$targetId]);
                         
-                        $_SESSION['message'] = "Administrador removido com sucesso.";
+                        $_SESSION['message'] = smb_t('Administrator removed successfully.', 'Administrador removido com sucesso.');
                     } catch (\Exception $e) {
-                        $_SESSION['error'] = "Erro ao remover administrador: " . $e->getMessage();
+                        $_SESSION['error'] = smb_t('Error while removing administrator: ', 'Erro ao remover administrador: ') . $e->getMessage();
                     }
                 } else {
-                    $_SESSION['error'] = "Ação inválida ou tentativa de remover o próprio usuário ativo.";
+                    $_SESSION['error'] = smb_t('Invalid action or attempt to remove the active user.', 'Ação inválida ou tentativa de remover o próprio usuário ativo.');
                 }
                 
                 header('Location: /profile');

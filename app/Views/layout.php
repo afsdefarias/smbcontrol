@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="<?= htmlspecialchars(smb_lang()) ?>" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -218,13 +218,13 @@
                     <?php 
                         $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
                         $links = [
-                            '/samba/users' => 'Usuarios SMB',
-                            '/samba/shares' => 'Compartilhamentos',
-                            '/samba/shares-config' => 'Parametros dos Shares',
-                            '/reports' => 'Auditoria',
-                            '/disks' => 'Discos',
-                            '/samba/conf' => 'Configuracao Global',
-                            '/profile' => 'Perfil'
+                            '/samba/users' => smb_t('SMB Users', 'Usuários SMB'),
+                            '/samba/shares' => smb_t('Shares', 'Compartilhamentos'),
+                            '/samba/shares-config' => smb_t('Share Parameters', 'Parâmetros dos Shares'),
+                            '/reports' => smb_t('Audit', 'Auditoria'),
+                            '/disks' => smb_t('Storage', 'Armazenamento'),
+                            '/samba/conf' => smb_t('Global Config', 'Configuração Global'),
+                            '/profile' => smb_t('Profile', 'Perfil')
                         ];
                         foreach($links as $path => $label):
                             $active = ($currentUri === $path) ? 'text-acc border-b-2 border-acc' : 'text-muted hover:text-fg';
@@ -236,7 +236,16 @@
                 </nav>
             </div>
             
-            <a href="/logout" class="text-sm font-medium text-muted hover:text-err transition-colors">logout</a>
+            <div class="flex items-center gap-4">
+                <a href="<?= htmlspecialchars(smb_lang_toggle_url()) ?>" class="h-9 px-2 flex items-center gap-2 text-sm font-medium text-muted hover:text-acc transition-colors" title="<?= htmlspecialchars(smb_t('Switch language', 'Mudar idioma')) ?>">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+                        <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20M12 2a15.3 15.3 0 0 0 0 20"></path>
+                    </svg>
+                    <span class="font-mono text-xs"><?= htmlspecialchars(smb_lang_label()) ?></span>
+                </a>
+                <a href="/logout" class="text-sm font-medium text-muted hover:text-err transition-colors"><?= smb_t('logout', 'sair') ?></a>
+            </div>
         </div>
     </header>
     <?php endif; ?>

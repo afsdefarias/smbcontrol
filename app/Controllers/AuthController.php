@@ -22,10 +22,10 @@ class AuthController {
                     header('Location: /dashboard');
                     exit;
                 } else {
-                    $error = 'Usuário ou senha inválidos.';
+                    $error = smb_t('Invalid username or password.', 'Usuário ou senha inválidos.');
                 }
             } catch (\Exception $e) {
-                $error = "Erro no banco de dados. " . $e->getMessage();
+                $error = smb_t('Database error. ', 'Erro no banco de dados. ') . $e->getMessage();
             }
         }
         

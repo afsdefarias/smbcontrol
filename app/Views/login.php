@@ -80,7 +80,7 @@
         
         <div class="text-center">
             <h1 class="text-4xl font-brand font-bold text-acc tracking-wider mb-2">SMBControl</h1>
-            <p class="text-xs font-mono text-muted uppercase tracking-widest">System Authentication</p>
+            <p class="text-xs font-mono text-muted uppercase tracking-widest"><?= smb_t('System Authentication', 'Autenticação do sistema') ?></p>
         </div>
         
         <div class="bg-bg1 border border-bg0 p-8 rounded-sm shadow-2xl">
@@ -93,17 +93,17 @@
             <form action="/login" method="POST" class="flex flex-col gap-6">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                 <div class="flex flex-col gap-2">
-                    <label class="text-xs font-mono text-muted uppercase tracking-wider">Username</label>
+                    <label class="text-xs font-mono text-muted uppercase tracking-wider"><?= smb_t('Username', 'Usuário') ?></label>
                     <input type="text" name="username" required autofocus class="w-full px-4 py-3 font-mono text-sm text-fg border border-bg0 rounded-sm focus:outline-none focus:border-acc transition-colors">
                 </div>
                 
                 <div class="flex flex-col gap-2">
-                    <label class="text-xs font-mono text-muted uppercase tracking-wider">Password</label>
+                    <label class="text-xs font-mono text-muted uppercase tracking-wider"><?= smb_t('Password', 'Senha') ?></label>
                     <input type="password" name="password" required class="w-full px-4 py-3 font-mono text-sm text-fg border border-bg0 rounded-sm focus:outline-none focus:border-acc transition-colors">
                 </div>
                 
                 <button type="submit" class="w-full bg-acc text-bg0 font-brand font-bold py-3 mt-2 rounded-sm hover:bg-acc/90 transition-colors uppercase tracking-widest text-sm shadow-[0_0_15px_rgba(212,163,92,0.15)]">
-                    Access System
+                    <?= smb_t('Access System', 'Acessar sistema') ?>
                 </button>
             </form>
         </div>
