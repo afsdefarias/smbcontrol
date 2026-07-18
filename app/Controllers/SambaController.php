@@ -170,23 +170,44 @@ class SambaController {
                 
                 Shell::execSudo("/usr/bin/mkdir -p $pathEsc");
                 Shell::execSudo("/usr/bin/chown $owner $pathEsc");
-                Shell::execSudo("/usr/bin/chmod 0777 $pathEsc");
+                Shell::execSudo("/usr/bin/chmod 0770 $pathEsc"); // Secure base permission
                 
-                $readGroups = [];
-                $writeGroups = [];
+                // Clear previous ACLs and set base owner/group ACLs
+                Shell::execSudo("/usr/bin/setfacl -b $pathEsc");
+                $ownerUserEsc = escapeshellarg($ownerUser);
+                $ownerGroupEsc = escapeshellarg($ownerGroup);
+                Shell::execSudo("/usr/bin/setfacl -m u:$ownerUserEsc:rwx,g:$ownerGroupEsc:rwx $pathEsc");
                 
-                foreach ($groupPerms as $grp => $perm) {
-                    // Valida se o grupo que veio no $_POST realmente existe no sistema
-                    if (!in_array($grp, $systemGroups)) continue;
-                    
+                $readList = [];
+                $writeList = [];
+                
+                $userPerms = $_POST['user_perms'] ?? [];
+                foreach ($userPerms as $usr => $perm) {
+                    if (!in_array($usr, $systemUsers)) continue;
+                    $usrEsc = escapeshellarg($usr);
                     if ($perm === 'read') {
-                        $readGroups[] = '@' . $grp;
+                        $readList[] = $usr;
+                        Shell::execSudo("/usr/bin/setfacl -m u:$usrEsc:rx -d -m u:$usrEsc:rx $pathEsc");
                     } elseif ($perm === 'write') {
-                        $writeGroups[] = '@' . $grp;
+                        $writeList[] = $usr;
+                        Shell::execSudo("/usr/bin/setfacl -m u:$usrEsc:rwx -d -m u:$usrEsc:rwx $pathEsc");
                     }
                 }
                 
-                $validUsers = array_merge($readGroups, $writeGroups);
+                $groupPerms = $_POST['group_perms'] ?? [];
+                foreach ($groupPerms as $grp => $perm) {
+                    if (!in_array($grp, $systemGroups)) continue;
+                    $grpEsc = escapeshellarg($grp);
+                    if ($perm === 'read') {
+                        $readList[] = '@' . $grp;
+                        Shell::execSudo("/usr/bin/setfacl -m g:$grpEsc:rx -d -m g:$grpEsc:rx $pathEsc");
+                    } elseif ($perm === 'write') {
+                        $writeList[] = '@' . $grp;
+                        Shell::execSudo("/usr/bin/setfacl -m g:$grpEsc:rwx -d -m g:$grpEsc:rwx $pathEsc");
+                    }
+                }
+                
+                $validUsers = array_merge($readList, $writeList);
                 
                 $block = "\n[$name]\n   path = $path\n   guest ok = no\n";
                 $block .= "   force group = $ownerGroup\n";
@@ -197,22 +218,51 @@ class SambaController {
                 if (!empty($validUsers)) {
                     $block .= "   read only = yes\n";
                     $block .= "   valid users = " . implode(', ', $validUsers) . "\n";
-                    if (!empty($readGroups)) $block .= "   read list = " . implode(', ', $readGroups) . "\n";
-                    if (!empty($writeGroups)) $block .= "   write list = " . implode(', ', $writeGroups) . "\n";
+                    if (!empty($readList)) $block .= "   read list = " . implode(', ', $readList) . "\n";
+                    if (!empty($writeList)) $block .= "   write list = " . implode(', ', $writeList) . "\n";
                 } else {
                     $block .= "   read only = no\n";
                 }
                 
+                $hideNetwork = $_POST['hide_network'] ?? '';
+                if ($hideNetwork === '1') {
+                    $block .= "   browseable = no\n";
+                }
+                
+                $hideUnreadable = $_POST['hide_unreadable'] ?? '';
+                if ($hideUnreadable === '1') {
+                    $block .= "   hide unreadable = yes\n";
+                }
+                
+                $vfsObjects = [];
+                $enableRecycle = $_POST['enable_recycle'] ?? '';
+                if ($enableRecycle === '1') {
+                    $vfsObjects[] = 'recycle';
+                    $block .= "   recycle:repository = #recycle\n";
+                    $block .= "   recycle:keeptree = yes\n";
+                    $block .= "   recycle:versions = yes\n";
+                    $block .= "   recycle:exclude_dir = tmp, cache\n";
+                    
+                    $recycleAdmin = $_POST['recycle_admin'] ?? '';
+                    if ($recycleAdmin === '1') {
+                        // Restrict .recycle to owners/admins
+                        $block .= "   recycle:directory_mode = 0700\n";
+                    }
+                }
+                
                 $enableAudit = $_POST['enable_audit'] ?? '';
                 if ($enableAudit === 'yes') {
-                    // Modificado para registrar também 'connect' para capturar tentativas de acesso ao Audit
-                    $block .= "   vfs objects = full_audit\n";
+                    $vfsObjects[] = 'full_audit';
                     $block .= "   full_audit:prefix = %u|%I|%S\n";
                     $block .= "   full_audit:prompt = error\n";
                     $block .= "   full_audit:success = connect disconnect mkdirat unlinkat pread pwrite renameat\n";
                     $block .= "   full_audit:failure = connect\n";
                     $block .= "   full_audit:facility = local7\n";
                     $block .= "   full_audit:priority = notice\n";
+                }
+                
+                if (!empty($vfsObjects)) {
+                    $block .= "   vfs objects = " . implode(' ', $vfsObjects) . "\n";
                 }
                 
                 // --- Limpeza: Remove bloco antigo se estiver editando ---

@@ -143,6 +143,64 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--muted);
         }
+        
+        /* Modal & Tabs */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-content {
+            background: var(--bg1);
+            border: 1px solid var(--bg0);
+            border-radius: 4px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.95);
+            transition: transform 0.2s;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        
+        .tab-btn {
+            padding: 10px 16px;
+            border-bottom: 2px solid transparent;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        .tab-btn:hover { color: var(--fg); }
+        .tab-btn.active {
+            color: var(--acc);
+            border-bottom-color: var(--acc);
+            background: rgba(255,255,255,0.02);
+        }
+        .tab-pane {
+            display: none;
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        .tab-pane.active {
+            display: block;
+        }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col">
@@ -215,6 +273,51 @@
                 setTimeout(() => t.remove(), 500);
             });
         }, 5000);
+
+        // Global Modal functions
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if(modal) modal.classList.add('active');
+        }
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if(modal) modal.classList.remove('active');
+        }
+        
+        // Global Tabs function
+        function switchTab(modalId, tabId) {
+            const modal = document.getElementById(modalId);
+            if(!modal) return;
+            
+            // Deactivate all
+            modal.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            modal.querySelectorAll('.tab-pane').forEach(p => {
+                p.classList.remove('active', 'flex');
+                p.classList.add('hidden');
+            });
+            
+            // Activate selected
+            const btn = modal.querySelector(`[data-tab="${tabId}"]`);
+            const pane = modal.querySelector(`#${tabId}`);
+            
+            if(btn) btn.classList.add('active');
+            if(pane) {
+                pane.classList.add('active', 'flex');
+                pane.classList.remove('hidden');
+            }
+        }
+        
+        // Close modal on escape key or outside click
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+            }
+        });
+        document.addEventListener('click', (e) => {
+            if(e.target.classList.contains('modal-overlay')) {
+                e.target.classList.remove('active');
+            }
+        });
     </script>
 </body>
 </html>

@@ -3,38 +3,56 @@
     <span class="text-sm text-muted font-mono">linux_samba_accounts</span>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    
-    <!-- Panel 1: Create User -->
-    <div class="bg-bg1 border border-bg0 p-6 flex flex-col h-full rounded-sm">
-        <h2 class="text-lg font-ui text-fg mb-4 border-b border-bg0 pb-2">Add / Modify User</h2>
-        
-        <form action="/samba/users" method="POST" class="flex-grow flex flex-col gap-4 font-mono text-sm">
+<div class="flex gap-4">
+    <button onclick="openModal('userWizardModal')" class="px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Create User
+    </button>
+    <button onclick="openModal('groupWizardModal')" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Create Group
+    </button>
+</div>
+
+<!-- User Wizard Modal -->
+<div id="userWizardModal" class="modal-overlay">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <form action="/samba/users" method="POST" class="flex flex-col h-full font-mono text-sm">
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
             <input type="hidden" name="action" value="create_user">
             
-            <div class="flex flex-col gap-1">
-                <label class="text-muted">Username</label>
-                <input type="text" name="username" required class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+            <div class="p-4 border-b border-bg0 bg-bg0/50 flex justify-between items-center">
+                <h2 class="text-lg font-ui text-fg font-bold">User Creation Wizard</h2>
+                <button type="button" onclick="closeModal('userWizardModal')" class="text-muted hover:text-err transition">&times;</button>
             </div>
             
-            <div class="flex flex-col gap-1">
-                <label class="text-muted">Samba Password <span class="text-xs opacity-70">(Leave empty if only updating groups)</span></label>
-                <input type="password" name="password" placeholder="Required for new users" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+            <div class="flex border-b border-bg0 bg-bg0/30">
+                <button type="button" class="tab-btn active" data-tab="u-tab-info" onclick="switchTab('userWizardModal', 'u-tab-info')">Basic Info</button>
+                <button type="button" class="tab-btn" data-tab="u-tab-groups" onclick="switchTab('userWizardModal', 'u-tab-groups')">Groups</button>
             </div>
             
-            <div class="flex flex-col gap-2 mt-2">
-                <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
-                    <input type="checkbox" name="create_home" value="1" class="accent-acc w-4 h-4">
-                    <span class="text-fg text-xs">Create Home Directory (/home/user)</span>
-                </label>
-                <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
-                    <input type="checkbox" name="create_user_group" value="1" class="accent-acc w-4 h-4">
-                    <span class="text-fg text-xs">Create User Group (same name as user)</span>
-                </label>
+            <div id="u-tab-info" class="tab-pane active flex flex-col gap-4 min-h-[250px]">
+                <div class="flex flex-col gap-1">
+                    <label class="text-muted">Username</label>
+                    <input type="text" name="username" required class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-muted">Samba Password <span class="text-xs opacity-70">(Leave empty if only updating groups)</span></label>
+                    <input type="password" name="password" placeholder="Required for new users" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+                </div>
+                <div class="flex flex-col gap-2 mt-2">
+                    <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
+                        <input type="checkbox" name="create_home" value="1" class="accent-acc w-4 h-4">
+                        <span class="text-fg text-xs">Create Home Directory (/home/user)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
+                        <input type="checkbox" name="create_user_group" value="1" class="accent-acc w-4 h-4">
+                        <span class="text-fg text-xs">Create User Group (same name as user)</span>
+                    </label>
+                </div>
             </div>
             
-            <div class="flex-grow flex flex-col gap-1 mt-2">
+            <div id="u-tab-groups" class="tab-pane hidden flex-col gap-4 min-h-[250px]">
                 <label class="text-muted">Associate to Groups (Optional)</label>
                 <?php if (empty($systemGroups)): ?>
                     <div class="border border-bg0 rounded-sm p-3 flex-grow">
@@ -51,26 +69,39 @@
                 <?php endif; ?>
             </div>
             
-            <div class="pt-4 mt-auto">
-                <button type="submit" class="w-full px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs">Save User</button>
+            <div class="p-4 border-t border-bg0 bg-bg0/50 flex justify-end gap-3 mt-auto">
+                <button type="button" onclick="closeModal('userWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-sm uppercase tracking-wider text-xs">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs">Save User</button>
             </div>
         </form>
     </div>
-    
-    <!-- Panel 2: Create Group -->
-    <div class="bg-bg1 border border-bg0 p-6 flex flex-col h-full rounded-sm">
-        <h2 class="text-lg font-ui text-fg mb-4 border-b border-bg0 pb-2">Add Group</h2>
-        
-        <form action="/samba/users" method="POST" class="flex-grow flex flex-col gap-4 font-mono text-sm">
+</div>
+
+<!-- Group Wizard Modal -->
+<div id="groupWizardModal" class="modal-overlay">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <form action="/samba/users" method="POST" class="flex flex-col h-full font-mono text-sm">
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
             <input type="hidden" name="action" value="create_group">
             
-            <div class="flex flex-col gap-1">
-                <label class="text-muted">Group Name</label>
-                <input type="text" name="groupname" required placeholder="e.g., directors" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc2 transition-colors">
+            <div class="p-4 border-b border-bg0 bg-bg0/50 flex justify-between items-center">
+                <h2 class="text-lg font-ui text-fg font-bold">Group Creation Wizard</h2>
+                <button type="button" onclick="closeModal('groupWizardModal')" class="text-muted hover:text-err transition">&times;</button>
             </div>
             
-            <div class="flex-grow flex flex-col gap-1 mt-2">
+            <div class="flex border-b border-bg0 bg-bg0/30">
+                <button type="button" class="tab-btn active" data-tab="g-tab-info" onclick="switchTab('groupWizardModal', 'g-tab-info')">Basic Info</button>
+                <button type="button" class="tab-btn" data-tab="g-tab-members" onclick="switchTab('groupWizardModal', 'g-tab-members')">Members</button>
+            </div>
+            
+            <div id="g-tab-info" class="tab-pane active flex flex-col gap-4 min-h-[250px]">
+                <div class="flex flex-col gap-1">
+                    <label class="text-muted">Group Name</label>
+                    <input type="text" name="groupname" required placeholder="e.g., directors" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc2 transition-colors">
+                </div>
+            </div>
+            
+            <div id="g-tab-members" class="tab-pane hidden flex-col gap-4 min-h-[250px]">
                 <label class="text-muted">Add Users to this Group (Optional)</label>
                 <?php if (empty($systemUsers)): ?>
                     <div class="border border-bg0 rounded-sm p-3 flex-grow">
@@ -87,8 +118,9 @@
                 <?php endif; ?>
             </div>
             
-            <div class="pt-4 mt-auto">
-                <button type="submit" class="w-full px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs">Create Group</button>
+            <div class="p-4 border-t border-bg0 bg-bg0/50 flex justify-end gap-3 mt-auto">
+                <button type="button" onclick="closeModal('groupWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-sm uppercase tracking-wider text-xs">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs">Create Group</button>
             </div>
         </form>
     </div>
@@ -132,9 +164,10 @@
                                 <button type="button" 
                                         class="px-2 py-1 bg-acc/10 text-acc border border-acc/20 hover:bg-acc hover:text-bg0 transition-colors rounded-sm text-xs mr-2"
                                         onclick="
-                                            document.querySelector('input[name=username]').value = '<?= htmlspecialchars(addslashes($user['username'])) ?>';
-                                            window.scrollTo({top: 0, behavior: 'smooth'});
-                                            document.querySelector('input[name=password]').focus();
+                                            document.querySelector('#userWizardModal input[name=username]').value = '<?= htmlspecialchars(addslashes($user['username'])) ?>';
+                                            document.querySelector('#userWizardModal input[name=username]').readOnly = true;
+                                            document.querySelector('#userWizardModal input[name=password]').placeholder = 'Leave blank to keep unchanged';
+                                            openModal('userWizardModal');
                                         ">Edit</button>
                                 
                                 <?php if ($user['disabled']): ?>
