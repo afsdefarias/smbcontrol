@@ -305,6 +305,59 @@ class SambaController {
         }
     }
 
+    private function getSmbUserActivityStats(): array {
+        $stats = [];
+        $result = Shell::execSudo('/usr/bin/cat /var/log/syslog');
+        if (!$result['success'] || trim($result['output']) === '') {
+            return $stats;
+        }
+
+        foreach (explode("\n", trim($result['output'])) as $line) {
+            if (!str_contains($line, 'smbd_audit:')) {
+                continue;
+            }
+
+            [$prefix, $auditPart] = explode('smbd_audit:', $line, 2);
+            $timestamp = strtok(trim($prefix), ' ') ?: '';
+            $fields = explode('|', trim($auditPart));
+            $username = $fields[0] ?? '';
+            $operation = strtolower($fields[3] ?? '');
+
+            if ($username === '' || $username === '?') {
+                continue;
+            }
+
+            if (!isset($stats[$username])) {
+                $stats[$username] = [
+                    'activities' => 0,
+                    'last_seen' => '',
+                ];
+            }
+
+            if ($operation === 'connect') {
+                $stats[$username]['activities']++;
+            }
+            if ($timestamp !== '' && $timestamp > $stats[$username]['last_seen']) {
+                $stats[$username]['last_seen'] = $timestamp;
+            }
+        }
+
+        return $stats;
+    }
+
+    private function formatAuditTimestamp(string $timestamp): string {
+        if ($timestamp === '') {
+            return '';
+        }
+
+        $time = strtotime($timestamp);
+        if ($time === false) {
+            return $timestamp;
+        }
+
+        return date('Y-m-d H:i', $time);
+    }
+
     public function conf() {
         try {
             $this->ensureSharesConfig();
@@ -680,6 +733,7 @@ class SambaController {
         }
 
         $sambaUsers = [];
+        $activityStats = $this->getSmbUserActivityStats();
         $pdbOutput = shell_exec('sudo -n /usr/bin/pdbedit -L -w 2>&1');
 
         if ($pdbOutput !== null) {
@@ -692,16 +746,19 @@ class SambaController {
                         continue;
                     }
                     $parts = explode(':', $line);
-                    if (count($parts) >= 5) {
-                        $username = $parts[0];
-                        if (in_array($username, $systemUsers, true)) {
-                            $sambaUsers[] = [
-                                'username' => $username,
-                                'disabled' => strpos($parts[4], 'D') !== false,
-                                'groups' => trim(shell_exec('id -Gn ' . escapeshellarg($username)))
-                            ];
-                        }
-                    }
+	                    if (count($parts) >= 5) {
+	                        $username = $parts[0];
+	                        if (in_array($username, $systemUsers, true)) {
+	                            $stats = $activityStats[$username] ?? ['activities' => 0, 'last_seen' => ''];
+	                            $sambaUsers[] = [
+	                                'username' => $username,
+	                                'disabled' => strpos($parts[4], 'D') !== false,
+	                                'groups' => trim(shell_exec('id -Gn ' . escapeshellarg($username))),
+	                                'activities' => $stats['activities'],
+	                                'last_seen' => $this->formatAuditTimestamp($stats['last_seen']),
+	                            ];
+	                        }
+	                    }
                 }
             }
         }

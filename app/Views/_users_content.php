@@ -141,26 +141,36 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left font-mono text-sm">
                 <thead>
-                    <tr class="text-muted border-b border-bg0">
-                        <th class="pb-2 font-normal"><?= smb_t('User', 'Usuário') ?></th>
-                        <th class="pb-2 font-normal"><?= smb_t('Linux Groups', 'Grupos Linux') ?></th>
-                        <th class="pb-2 font-normal"><?= smb_t('Samba Status', 'Status Samba') ?></th>
-                        <th class="pb-2 font-normal text-right"><?= smb_t('Actions', 'Ações') ?></th>
-                    </tr>
+	                    <tr class="text-muted border-b border-bg0">
+	                        <th class="pb-2 font-normal"><?= smb_t('User', 'Usuário') ?></th>
+	                        <th class="pb-2 font-normal"><?= smb_t('Group', 'Grupo') ?></th>
+	                        <th class="pb-2 font-normal"><?= smb_t('Samba Status', 'Status Samba') ?></th>
+	                        <th class="pb-2 font-normal"><?= smb_t('Activities', 'Atividades') ?></th>
+	                        <th class="pb-2 font-normal"><?= smb_t('Last Online', 'Última vez online') ?></th>
+	                        <th class="pb-2 font-normal text-right"><?= smb_t('Actions', 'Ações') ?></th>
+	                    </tr>
                 </thead>
                 <tbody class="divide-y divide-bg0/50">
                     <?php foreach ($sambaUsers as $user): ?>
                         <tr class="hover:bg-bg0/20 transition-colors">
-                            <td class="py-3 text-fg"><?= htmlspecialchars($user['username']) ?></td>
-                            <td class="py-3 text-fg opacity-70 text-xs"><?= htmlspecialchars($user['groups'] ?? '-') ?></td>
-                            <td class="py-3">
-                                <?php if ($user['disabled']): ?>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-err/10 text-err border border-err/20">Disabled</span>
-                                <?php else: ?>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-acc/10 text-acc border border-acc/20">Active</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="py-3 text-right space-x-2">
+	                            <td class="py-3 text-fg"><?= htmlspecialchars($user['username']) ?></td>
+	                            <td class="py-3 text-fg opacity-70 text-xs"><?= htmlspecialchars($user['groups'] ?? '-') ?></td>
+	                            <td class="py-3">
+	                                <?php if ($user['disabled']): ?>
+	                                    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-err/10 text-err border border-err/20"><?= smb_t('Disabled', 'Desativado') ?></span>
+	                                <?php else: ?>
+	                                    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-acc/10 text-acc border border-acc/20"><?= smb_t('Active', 'Ativo') ?></span>
+	                                <?php endif; ?>
+	                            </td>
+	                            <td class="py-3 text-fg">
+	                                <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-bg0/60 border border-bg0">
+	                                    <?= (int)($user['activities'] ?? 0) ?>
+	                                </span>
+	                            </td>
+	                            <td class="py-3 text-muted text-xs">
+	                                <?= !empty($user['last_seen']) ? htmlspecialchars($user['last_seen']) : smb_t('Never', 'Nunca') ?>
+	                            </td>
+	                            <td class="py-3 text-right space-x-2">
                                 <button type="button" 
                                         class="px-2 py-1 bg-acc/10 text-acc border border-acc/20 hover:bg-acc hover:text-bg0 transition-colors rounded-sm text-xs mr-2"
                                         onclick="
