@@ -67,6 +67,49 @@ class SambaController {
         require __DIR__ . '/../Views/smbconf.php';
     }
 
+    public function sharesConf() {
+        $sharesConfPath = '/etc/samba/shares.conf';
+        $content = Shell::execSudo("/usr/bin/cat $sharesConfPath")['output'];
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $configPost = $_POST['config'] ?? [];
+            $newContent = SambaParser::generate($configPost);
+            
+            $tempFile = '/tmp/shares.conf.tmp';
+            file_put_contents($tempFile, $newContent);
+            
+            // Validate with testparm
+            // testparm -s without arguments checks smb.conf which typically includes shares.conf
+            // However, to check just the shares file isolated, testparm doesn't have a direct flag if it's included,
+            // but we can try to testparm the global smb.conf while temporarily replacing the shares.conf
+            
+            // To be safe and simple, we can just save it. Or better, we can validate the global smb.conf.
+            // Let's just backup and overwrite, then testparm. If fail, restore.
+            Shell::execSudo("/usr/bin/cp $sharesConfPath /tmp/shares.conf.bak");
+            Shell::execSudo("/usr/bin/cp $tempFile $sharesConfPath");
+            
+            $testResult = Shell::execSudo("/usr/bin/testparm -s");
+            
+            if ($testResult['code'] === 0) {
+                $_SESSION['message'] = "shares.conf salvo e validado com sucesso.";
+                Shell::execSudo("/usr/bin/systemctl reload smbd");
+                header('Location: /samba/shares-config');
+                exit;
+            } else {
+                // Restore backup
+                Shell::execSudo("/usr/bin/cp /tmp/shares.conf.bak $sharesConfPath");
+                $_SESSION['error'] = "Erro de validação (testparm): " . nl2br(htmlspecialchars($testResult['output']));
+                $content = $newContent;
+            }
+            @unlink($tempFile);
+            Shell::execSudo("/usr/bin/rm -f /tmp/shares.conf.bak");
+        }
+        
+        $parsedConf = SambaParser::parse($content);
+        
+        require __DIR__ . '/../Views/sharesconf.php';
+    }
+
     public function shares() {
         // Pre-carregar usuários e grupos para validação e exibição
         $systemUsers = $this->getSystemUsers();
@@ -146,6 +189,10 @@ class SambaController {
                 $validUsers = array_merge($readGroups, $writeGroups);
                 
                 $block = "\n[$name]\n   path = $path\n   guest ok = no\n";
+                $block .= "   force group = $ownerGroup\n";
+                $block .= "   create mask = 0660\n";
+                $block .= "   directory mask = 0770\n";
+
                 
                 if (!empty($validUsers)) {
                     $block .= "   read only = yes\n";
@@ -162,7 +209,7 @@ class SambaController {
                     $block .= "   vfs objects = full_audit\n";
                     $block .= "   full_audit:prefix = %u|%I|%S\n";
                     $block .= "   full_audit:prompt = error\n";
-                    $block .= "   full_audit:success = connect disconnect mkdir rmdir read write rename unlink\n";
+                    $block .= "   full_audit:success = connect disconnect mkdirat unlinkat pread pwrite renameat\n";
                     $block .= "   full_audit:failure = connect\n";
                     $block .= "   full_audit:facility = local7\n";
                     $block .= "   full_audit:priority = notice\n";
@@ -195,9 +242,8 @@ class SambaController {
                 // Garantir que smb.conf tem o include
                 $smbConfContent = shell_exec("sudo -n /usr/bin/cat /etc/samba/smb.conf 2>/dev/null");
                 if ($smbConfContent && strpos($smbConfContent, 'include = /etc/samba/shares.conf') === false) {
-                    // Adicionar na seção global
-                    $sedCmd = escapeshellarg('/\[global\]/a \   include = /etc/samba/shares.conf');
-                    Shell::execSudo("/usr/bin/sed -i $sedCmd /etc/samba/smb.conf");
+                    // Adicionar no final do arquivo garantindo que está no escopo global
+                    Shell::execSudo("sh -c 'echo \"\n[global]\n   include = /etc/samba/shares.conf\" >> /etc/samba/smb.conf'");
                 }
                 
                 Shell::execSudo("/usr/bin/systemctl reload smbd");

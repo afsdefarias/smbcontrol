@@ -9,7 +9,7 @@
 ?>
 <div class="flex justify-between items-baseline mb-8">
     <div class="flex items-baseline gap-4">
-        <h1 class="text-2xl font-brand font-bold text-fg">Advanced Settings</h1>
+        <h1 class="text-2xl font-brand font-bold text-fg">Global Settings</h1>
         <span class="text-sm text-muted font-mono">/etc/samba/smb.conf</span>
     </div>
     

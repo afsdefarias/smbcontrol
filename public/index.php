@@ -73,6 +73,9 @@ if ($uri === '/login') {
         case '/samba/conf':
             (new SambaController())->conf();
             break;
+        case '/samba/shares-config':
+            (new SambaController())->sharesConf();
+            break;
         case '/samba/shares':
             (new SambaController())->shares();
             break;

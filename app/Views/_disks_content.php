@@ -1,6 +1,6 @@
 <div class="mb-8 flex items-center justify-between">
     <div class="flex items-baseline gap-4">
-        <h1 class="text-3xl font-brand font-bold text-fg tracking-tight">Disks</h1>
+        <h1 class="text-3xl font-brand font-bold text-fg tracking-tight">Storage</h1>
         <span class="text-sm text-muted font-mono tracking-wide">lsblk • mount • fstab</span>
     </div>
     <a href="/disks" class="px-4 py-2 bg-transparent border border-bg0 text-fg hover:border-muted rounded-sm font-mono text-sm transition-colors">reload</a>

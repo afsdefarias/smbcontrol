@@ -1,5 +1,5 @@
 <div class="mb-8 flex items-baseline gap-4">
-    <h1 class="text-2xl font-brand font-bold text-fg">Create Share</h1>
+    <h1 class="text-2xl font-brand font-bold text-fg">Shares</h1>
     <span class="text-sm text-muted font-mono">smb.conf_shares</span>
 </div>
 

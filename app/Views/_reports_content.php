@@ -1,5 +1,5 @@
 <div class="mb-8 flex items-baseline gap-4">
-    <h1 class="text-2xl font-brand font-bold text-fg">Audit</h1>
+    <h1 class="text-2xl font-brand font-bold text-fg">Audit Reports</h1>
     <span class="text-sm text-muted font-mono">vfs_full_audit</span>
 </div>
 
