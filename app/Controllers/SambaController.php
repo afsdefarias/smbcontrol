@@ -292,6 +292,11 @@ class SambaController {
                     $this->runSudo('/usr/bin/setfacl -m ' . escapeshellarg("g:$grp:$acl") . ' -m ' . escapeshellarg("d:g:$grp:$acl") . ' ' . $pathEsc, smb_t("Could not apply ACL for group $grp", "Não foi possível aplicar ACL do grupo $grp"));
                 }
 
+                if (empty($readList) && empty($writeList)) {
+                    $writeList[] = $ownerUser;
+                    $writeList[] = '@' . $ownerGroup;
+                }
+
                 $validUsers = array_merge($readList, $writeList);
                 $block = "\n[$name]\n";
                 $block .= "   path = $path\n";

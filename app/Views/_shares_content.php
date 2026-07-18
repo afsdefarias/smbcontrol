@@ -77,27 +77,27 @@
                 
                 <div class="space-y-1.5 mt-auto pt-4 text-fg font-sans text-[13px]">
                     <label class="flex items-center gap-2 cursor-pointer hover:bg-bg0/30 p-1 rounded-sm transition">
-                        <input type="checkbox" name="hide_network" value="1" class="accent-acc w-4 h-4">
+                        <input type="checkbox" name="hide_network" value="1" class="check-square">
                         <span><?= smb_t('Do not show this share in network browsing', 'Não listar este compartilhamento na navegação da rede') ?></span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer hover:bg-bg0/30 p-1 rounded-sm transition">
-                        <input type="checkbox" name="hide_unreadable" value="1" class="accent-acc w-4 h-4">
+                        <input type="checkbox" name="hide_unreadable" value="1" class="check-square">
                         <span><?= smb_t('Hide files and subfolders without read permission', 'Ocultar arquivos e subpastas sem permissão de leitura') ?></span>
                     </label>
                     <div class="flex flex-col">
                         <label class="flex items-center gap-2 cursor-pointer hover:bg-bg0/30 p-1 rounded-sm transition">
-                            <input type="checkbox" name="enable_recycle" value="1" class="accent-acc w-4 h-4" onchange="document.getElementById('recycle_admin').disabled = !this.checked">
+                            <input type="checkbox" name="enable_recycle" value="1" class="check-square" onchange="document.getElementById('recycle_admin').disabled = !this.checked">
                             <span><?= smb_t('Enable Samba recycle bin on this share', 'Ativar lixeira do Samba neste share') ?></span>
                         </label>
                         <div class="ml-7 mb-1">
                             <label class="flex items-center gap-2 cursor-pointer text-muted hover:text-fg transition">
-                                <input type="checkbox" name="recycle_admin" id="recycle_admin" value="1" disabled class="accent-acc w-3.5 h-3.5">
+                                <input type="checkbox" name="recycle_admin" id="recycle_admin" value="1" disabled class="check-square">
                                 <span><?= smb_t('Restrict recycle bin to owner/admin', 'Restringir a lixeira ao dono/admin') ?></span>
                             </label>
                         </div>
                     </div>
                     <label class="flex items-center gap-2 cursor-pointer hover:bg-bg0/30 p-1 rounded-sm transition mt-2">
-                        <input type="checkbox" name="enable_audit" value="yes" checked class="accent-acc w-4 h-4">
+                        <input type="checkbox" name="enable_audit" value="yes" checked class="check-square">
                         <span class="text-muted"><?= smb_t('Enable full_audit on this share', 'Ativar auditoria full_audit neste share') ?></span>
                     </label>
                 </div>
@@ -134,9 +134,9 @@
                                             <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                             <?= htmlspecialchars($u) ?>
                                         </td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="none" checked class="w-3.5 h-3.5 accent-muted"></td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="write" class="w-3.5 h-3.5 accent-ok"></td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="read" class="w-3.5 h-3.5 accent-acc2"></td>
+                                        <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="none" <?= $u === 'root' ? '' : 'checked' ?> class="permission-choice"></td>
+                                        <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="write" <?= $u === 'root' ? 'checked' : '' ?> class="permission-choice"></td>
+                                        <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="read" class="permission-choice"></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -148,9 +148,9 @@
                                             <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                                             <?= htmlspecialchars($g) ?>
                                         </td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="none" checked class="w-3.5 h-3.5 accent-muted"></td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="write" class="w-3.5 h-3.5 accent-ok"></td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="read" class="w-3.5 h-3.5 accent-acc2"></td>
+                                        <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="none" <?= $g === 'root' ? '' : 'checked' ?> class="permission-choice"></td>
+                                        <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="write" <?= $g === 'root' ? 'checked' : '' ?> class="permission-choice"></td>
+                                        <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="read" class="permission-choice"></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -169,6 +169,7 @@
 
 <script>
 const defaultShareBasePath = '/srv/samba/';
+let sharePermissionsTouched = false;
 
 function normalizeShareSlug(value) {
     return value
@@ -178,6 +179,40 @@ function normalizeShareSlug(value) {
         .replace(/^-+|-+$/g, '');
 }
 
+function escapeAttributeValue(value) {
+    return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function findPermissionRadio(prefix, name, value) {
+    const safeName = escapeAttributeValue(name);
+    return document.querySelector(`input[name="${prefix}_perms[${safeName}]"][value="${value}"]`);
+}
+
+function resetPermissionsToNone() {
+    document.querySelectorAll('input[name^="user_perms"][value="none"], input[name^="group_perms"][value="none"]').forEach(radio => {
+        radio.checked = true;
+    });
+}
+
+function setPermission(prefix, name, value) {
+    const radio = findPermissionRadio(prefix, name, value);
+    if (radio) radio.checked = true;
+}
+
+function applyOwnerPermissionDefaults(force = false) {
+    if (sharePermissionsTouched && !force) return;
+
+    const modal = document.querySelector('#shareWizardModal');
+    if (!modal) return;
+
+    const ownerUser = modal.querySelector('select[name=owner_user]')?.value;
+    const ownerGroup = modal.querySelector('select[name=owner_group]')?.value;
+
+    resetPermissionsToNone();
+    if (ownerUser) setPermission('user', ownerUser, 'write');
+    if (ownerGroup) setPermission('group', ownerGroup, 'write');
+}
+
 function setupDefaultSharePath() {
     const modal = document.querySelector('#shareWizardModal');
     if (!modal) return;
@@ -185,6 +220,16 @@ function setupDefaultSharePath() {
     const nameInput = modal.querySelector('input[name=name]');
     const pathInput = modal.querySelector('input[name=path]');
     if (!nameInput || !pathInput) return;
+
+    modal.querySelectorAll('#permsTable input[type=radio]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            sharePermissionsTouched = true;
+        });
+    });
+
+    modal.querySelectorAll('select[name=owner_user], select[name=owner_group]').forEach(select => {
+        select.addEventListener('change', () => applyOwnerPermissionDefaults(false));
+    });
 
     let pathWasEdited = false;
     pathInput.addEventListener('input', () => {
@@ -203,10 +248,14 @@ function setupDefaultSharePath() {
             const form = modal.querySelector('form');
             if (form) form.reset();
             nameInput.readOnly = false;
+            sharePermissionsTouched = false;
+            applyOwnerPermissionDefaults(true);
             pathWasEdited = false;
             pathInput.value = defaultShareBasePath;
         });
     }
+
+    applyOwnerPermissionDefaults(true);
 }
 
 function filterPerms() {
@@ -261,23 +310,21 @@ function editShare(data) {
         if(selUser) selUser.value = data.force_user;
     }
     
-    // Permissions
-    // Reset all to 'none' first
-    document.querySelectorAll('input[name^="user_perms"][value="none"]').forEach(r => r.checked = true);
-    document.querySelectorAll('input[name^="group_perms"][value="none"]').forEach(r => r.checked = true);
+    // Permissions from the saved Samba config take precedence over create defaults.
+    sharePermissionsTouched = true;
+    resetPermissionsToNone();
     
-    const readList = (data.read_list || '').split(',').map(s => s.trim()).filter(s => s);
-    const writeList = (data.write_list || '').split(',').map(s => s.trim()).filter(s => s);
+    const splitSambaList = value => (value || '').split(/[,\s]+/).map(s => s.trim()).filter(s => s);
+    const readList = splitSambaList(data.read_list);
+    const writeList = splitSambaList(data.write_list);
     
     const applyPerm = (list, val) => {
         list.forEach(item => {
             if (item.startsWith('@')) {
                 const grp = item.substring(1);
-                const radio = document.querySelector(`input[name="group_perms[${grp}]"][value="${val}"]`);
-                if(radio) radio.checked = true;
+                setPermission('group', grp, val);
             } else {
-                const radio = document.querySelector(`input[name="user_perms[${item}]"][value="${val}"]`);
-                if(radio) radio.checked = true;
+                setPermission('user', item, val);
             }
         });
     };

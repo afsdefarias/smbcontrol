@@ -128,6 +128,52 @@
             border-color: var(--acc);
             box-shadow: 0 0 0 1px var(--acc);
         }
+
+        .check-square,
+        .permission-choice {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            display: inline-grid;
+            place-content: center;
+            border: 1px solid rgba(138, 145, 136, 0.65);
+            border-radius: 2px;
+            background: #0c0f12;
+            cursor: pointer;
+            transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .check-square::before,
+        .permission-choice::before {
+            content: "";
+            width: 8px;
+            height: 5px;
+            border-left: 2px solid var(--acc);
+            border-bottom: 2px solid var(--acc);
+            transform: rotate(-45deg) scale(0);
+            transform-origin: center;
+            transition: transform 0.12s ease;
+        }
+        .check-square:checked,
+        .permission-choice:checked {
+            border-color: var(--acc);
+            background: rgba(212, 163, 92, 0.12);
+            box-shadow: 0 0 0 1px rgba(212, 163, 92, 0.2);
+        }
+        .check-square:checked::before,
+        .permission-choice:checked::before {
+            transform: rotate(-45deg) scale(1);
+        }
+        .check-square:focus-visible,
+        .permission-choice:focus-visible {
+            outline: 2px solid var(--acc);
+            outline-offset: 2px;
+        }
+        .check-square:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
         
         /* Scrollbar */
         ::-webkit-scrollbar {
