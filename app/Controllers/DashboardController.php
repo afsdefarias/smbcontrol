@@ -29,38 +29,97 @@ class DashboardController {
         exit;
     }
 
+    private function parseAuditLine(string $line): ?array {
+        if (!str_contains($line, 'smbd_audit:')) {
+            return null;
+        }
+
+        [$prefix, $auditPart] = explode('smbd_audit:', $line, 2);
+        $prefixParts = preg_split('/\s+/', trim($prefix), 2);
+        $timestamp = $prefixParts[0] ?? '';
+        $host = $prefixParts[1] ?? '';
+        $fields = explode('|', trim($auditPart));
+
+        if (count($fields) < 5) {
+            return null;
+        }
+
+        $details = array_slice($fields, 5);
+        $lastDetail = end($details) ?: '';
+        $fileName = $lastDetail !== '' ? basename($lastDetail) : ($fields[2] ?? '');
+
+        return [
+            'timestamp' => $timestamp,
+            'date' => substr($timestamp, 0, 10),
+            'host' => $host,
+            'user' => $fields[0] ?? '?',
+            'ip' => $fields[1] ?? '?',
+            'share' => $fields[2] ?? '?',
+            'operation' => $fields[3] ?? '?',
+            'status' => $fields[4] ?? '?',
+            'details' => implode(' -> ', $details),
+            'name' => $fileName,
+            'raw' => $line,
+        ];
+    }
+
+    private function auditLogMatches(array $log, array $filters): bool {
+        foreach (['user', 'ip', 'share', 'operation', 'date_from', 'date_to', 'q'] as $key) {
+            $filters[$key] = trim($filters[$key] ?? '');
+        }
+
+        if ($filters['user'] !== '' && stripos($log['user'], $filters['user']) === false) return false;
+        if ($filters['ip'] !== '' && stripos($log['ip'], $filters['ip']) === false) return false;
+        if ($filters['share'] !== '' && stripos($log['share'], $filters['share']) === false) return false;
+        if ($filters['operation'] !== '' && stripos($log['operation'], $filters['operation']) === false) return false;
+        if ($filters['date_from'] !== '' && $log['date'] < $filters['date_from']) return false;
+        if ($filters['date_to'] !== '' && $log['date'] > $filters['date_to']) return false;
+
+        if ($filters['q'] !== '') {
+            $haystack = implode(' ', [
+                $log['name'],
+                $log['user'],
+                $log['ip'],
+                $log['share'],
+                $log['operation'],
+                $log['status'],
+                $log['details'],
+                $log['raw'],
+            ]);
+            if (stripos($haystack, $filters['q']) === false) return false;
+        }
+
+        return true;
+    }
+
     public function reports() {
         $logs = [];
+        $filters = [
+            'q' => $_GET['q'] ?? '',
+            'user' => $_GET['user'] ?? '',
+            'ip' => $_GET['ip'] ?? '',
+            'share' => $_GET['share'] ?? '',
+            'operation' => $_GET['operation'] ?? '',
+            'date_from' => $_GET['date_from'] ?? '',
+            'date_to' => $_GET['date_to'] ?? '',
+        ];
+
         try {
-            $output = shell_exec("sudo -n /usr/bin/cat /var/log/syslog 2>/dev/null | grep smbd_audit | tail -n 100");
-            if ($output) {
-                $lines = explode("\n", trim($output));
+            $result = Shell::execSudo('/usr/bin/cat /var/log/syslog');
+            if ($result['success'] && trim($result['output']) !== '') {
+                $lines = explode("\n", trim($result['output']));
                 foreach ($lines as $line) {
-                    if (empty($line)) continue;
-                    // syslog format: Jul 16 00:12:34 smbcontrol smbd_audit: andre|192.168.1.10|Arquivos|mkdir|ok|NewFolder
-                    // or similar. We will just pass the raw line for now, or parse basic info.
-                    
-                    // Simple parse
-                    $parts = explode('smbd_audit:', $line);
-                    if (count($parts) >= 2) {
-                        $datePart = trim($parts[0]); // e.g. Jul 16 00:12:34 smbcontrol
-                        $auditPart = trim($parts[1]); // e.g. andre|192.168.1.10|Arquivos|mkdir|ok|NewFolder
-                        
-                        $auditFields = explode('|', $auditPart);
-                        $logs[] = [
-                            'data_hora' => $datePart,
-                            'usuario' => $auditFields[0] ?? '?',
-                            'ip' => $auditFields[1] ?? '?',
-                            'arquivo' => $auditFields[2] ?? '?', // Share
-                            'acao' => ($auditFields[3] ?? '') . ' (' . ($auditFields[4] ?? '') . ') ' . ($auditFields[5] ?? ''),
-                        ];
+                    $parsed = $this->parseAuditLine($line);
+                    if ($parsed && $this->auditLogMatches($parsed, $filters)) {
+                        $logs[] = $parsed;
                     }
                 }
-                $logs = array_reverse($logs); // Newest first
+                $logs = array_slice(array_reverse($logs), 0, 500);
             }
         } catch (\Exception $e) {
             $_SESSION['error'] = smb_t('Error while reading logs: ', 'Erro ao buscar logs: ') . $e->getMessage();
         }
+
         require __DIR__ . '/../Views/reports.php';
     }
 }
