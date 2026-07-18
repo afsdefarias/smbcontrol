@@ -1,26 +1,26 @@
 <?php
 // Define the predefined common share options
 $commonShareOptions = [
-    'path' => ['description' => 'Path to the directory'],
-    'comment' => ['description' => 'Share comment'],
-    'browseable' => ['description' => 'Is this share visible in the network? (yes/no)'],
-    'read only' => ['description' => 'Is this share read-only? (yes/no)'],
-    'writeable' => ['description' => 'Is this share writeable? (yes/no)'],
-    'guest ok' => ['description' => 'Allow guest access? (yes/no)'],
-    'public' => ['description' => 'Same as guest ok (yes/no)'],
-    'valid users' => ['description' => 'List of allowed users/groups'],
-    'invalid users' => ['description' => 'List of denied users/groups'],
-    'read list' => ['description' => 'Users with read-only access'],
-    'write list' => ['description' => 'Users with read-write access'],
-    'admin users' => ['description' => 'Users operating as root'],
-    'create mask' => ['description' => 'File creation mask (e.g. 0664)'],
-    'directory mask' => ['description' => 'Directory creation mask (e.g. 0775)'],
-    'force user' => ['description' => 'Force all connections to this user'],
-    'force group' => ['description' => 'Force all connections to this group'],
-    'vfs objects' => ['description' => 'VFS modules to load (e.g. recycle, full_audit)'],
-    'veto files' => ['description' => 'Hide and prevent access to these files'],
-    'hide dot files' => ['description' => 'Hide files starting with a dot (yes/no)'],
-    'inherit permissions' => ['description' => 'Inherit parent directory permissions (yes/no)'],
+    'path' => ['description' => 'Pasta Linux exportada por este compartilhamento'],
+    'comment' => ['description' => 'Descricao exibida para clientes SMB'],
+    'browseable' => ['description' => 'Mostra o share na navegacao de rede (yes/no)'],
+    'read only' => ['description' => 'Bloqueia escrita por padrao; write list pode liberar excecoes (yes/no)'],
+    'writeable' => ['description' => 'Permite escrita por padrao (yes/no)'],
+    'guest ok' => ['description' => 'Permite acesso anonimo/guest (yes/no)'],
+    'public' => ['description' => 'Alias de guest ok (yes/no)'],
+    'valid users' => ['description' => 'Usuarios/grupos autorizados a conectar; grupos usam @grupo'],
+    'invalid users' => ['description' => 'Usuarios/grupos bloqueados'],
+    'read list' => ['description' => 'Usuarios/grupos forçados para somente leitura'],
+    'write list' => ['description' => 'Usuarios/grupos autorizados a gravar'],
+    'admin users' => ['description' => 'Usuarios que operam como root neste share'],
+    'create mask' => ['description' => 'Mascara para novos arquivos, ex.: 0660'],
+    'directory mask' => ['description' => 'Mascara para novas pastas, ex.: 0770'],
+    'force user' => ['description' => 'Forca todas as conexoes a gravarem como este usuario'],
+    'force group' => ['description' => 'Forca todas as conexoes a gravarem como este grupo'],
+    'vfs objects' => ['description' => 'Modulos VFS ativos, ex.: recycle full_audit'],
+    'veto files' => ['description' => 'Padroes de arquivos escondidos/bloqueados'],
+    'hide dot files' => ['description' => 'Oculta arquivos iniciados por ponto (yes/no)'],
+    'inherit permissions' => ['description' => 'Novos arquivos herdam permissoes da pasta pai (yes/no)'],
 ];
 
 // Combine existing parsed options with our common options for each share
@@ -63,10 +63,16 @@ if (!empty($parsedConf)) {
 
 <div class="flex justify-between items-baseline mb-8">
     <div class="flex items-baseline gap-4">
-        <h1 class="text-2xl font-brand font-bold text-fg">Share Settings</h1>
+        <h1 class="text-2xl font-brand font-bold text-fg">Parametros dos compartilhamentos</h1>
         <span class="text-sm text-muted font-mono">/etc/samba/shares.conf</span>
     </div>
 </div>
+
+<?php if (isset($sharesIncluded) && !$sharesIncluded): ?>
+    <div class="mb-6 bg-err/10 border-l-4 border-err p-4 text-sm font-mono text-err">
+        <code>/etc/samba/shares.conf</code> nao esta incluido no <code>/etc/samba/smb.conf</code>. O painel tenta corrigir isso automaticamente antes de salvar.
+    </div>
+<?php endif; ?>
 
 <div class="bg-bg1 rounded-sm border border-bg0 p-6">
     <form action="/samba/shares-config" method="POST" id="sharesForm">
@@ -74,7 +80,7 @@ if (!empty($parsedConf)) {
         <div class="mb-6">
             <?php if (empty($displayData)): ?>
                 <div class="p-6 text-center text-muted font-mono bg-bg0/30 border border-bg0 rounded-sm">
-                    No shares found in shares.conf. Please create a share first on the Shares page.
+                    Nenhum compartilhamento encontrado em shares.conf. Crie um primeiro na tela Compartilhamentos.
                 </div>
             <?php else: ?>
                 <?php foreach ($displayData as $section => $fields): ?>
@@ -113,6 +119,7 @@ if (!empty($parsedConf)) {
                                     
                                     <input type="hidden" name="config[<?= htmlspecialchars($section) ?>][<?= $idx ?>][key]" value="<?= $key ?>">
                                     <input type="hidden" name="config[<?= htmlspecialchars($section) ?>][<?= $idx ?>][comments]" value="<?= $comments ?>" <?= $disabled ? 'disabled' : '' ?> class="comment-input">
+                                    <input type="hidden" name="config[<?= htmlspecialchars($section) ?>][<?= $idx ?>][enabled]" value="0">
                                     
                                     <div class="flex justify-between items-start mb-2">
                                         <div class="flex flex-col">
@@ -123,7 +130,7 @@ if (!empty($parsedConf)) {
                                         </div>
                                         
                                         <label class="relative inline-flex items-center cursor-pointer ml-4">
-                                            <input type="checkbox" class="sr-only peer toggle-active" data-target="container-<?= md5($section.$key) ?>" <?= !$disabled ? 'checked' : '' ?>>
+                                            <input type="checkbox" name="config[<?= htmlspecialchars($section) ?>][<?= $idx ?>][enabled]" value="1" class="sr-only peer toggle-active" data-target="container-<?= md5($section.$key) ?>" <?= !$disabled ? 'checked' : '' ?>>
                                             <div class="w-9 h-5 bg-bg1 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-acc"></div>
                                         </label>
                                     </div>
@@ -145,7 +152,7 @@ if (!empty($parsedConf)) {
 
         <div class="flex justify-end pt-4 border-t border-bg0">
             <button type="submit" class="px-6 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-sm flex items-center gap-2">
-                Save Configuration
+                Salvar, validar e aplicar
             </button>
         </div>
     </form>
@@ -182,19 +189,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    document.getElementById('sharesForm').addEventListener('submit', function(e) {
-        const toggles = document.querySelectorAll('.toggle-active');
-        toggles.forEach(toggle => {
-            if (!toggle.checked) {
-                const containerId = toggle.getAttribute('data-target');
-                const container = document.getElementById(containerId);
-                const inputs = container.querySelectorAll('input');
-                inputs.forEach(input => {
-                    if(!input.classList.contains('toggle-active')) {
-                        input.disabled = true;
-                    }
-                });
-            }
+    document.getElementById('sharesForm').addEventListener('submit', function() {
+        document.querySelectorAll('.val-input, .comment-input').forEach(input => {
+            input.disabled = false;
         });
     });
 });

@@ -1,12 +1,18 @@
 <div class="mb-8 flex items-baseline gap-4">
-    <h1 class="text-2xl font-brand font-bold text-fg">Shares</h1>
-    <span class="text-sm text-muted font-mono">smb.conf_shares</span>
+    <h1 class="text-2xl font-brand font-bold text-fg">Compartilhamentos</h1>
+    <span class="text-sm text-muted font-mono">/etc/samba/shares.conf</span>
 </div>
+
+<?php if (isset($sharesIncluded) && !$sharesIncluded): ?>
+    <div class="mb-6 bg-err/10 border-l-4 border-err p-4 text-sm font-mono text-err">
+        O Samba ainda nao esta lendo <code>/etc/samba/shares.conf</code>. Salve ou crie um compartilhamento para o painel inserir o include no <code>/etc/samba/smb.conf</code>.
+    </div>
+<?php endif; ?>
 
 <div class="mb-6">
     <button onclick="openModal('shareWizardModal')" class="px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        Create Share
+        Criar compartilhamento
     </button>
 </div>
 
@@ -18,33 +24,33 @@
             <input type="hidden" name="action" value="create">
             
             <div class="p-4 border-b border-bg0 bg-bg0/50 flex justify-between items-center">
-                <h2 class="text-lg font-ui text-fg font-bold">Share Creation Wizard</h2>
+                <h2 class="text-lg font-ui text-fg font-bold">Criar ou atualizar compartilhamento</h2>
                 <button type="button" onclick="closeModal('shareWizardModal')" class="text-muted hover:text-err transition">&times;</button>
             </div>
             
             <div class="flex border-b border-bg0 bg-bg0/30">
-                <button type="button" class="tab-btn active font-sans" data-tab="s-tab-info" onclick="switchTab('shareWizardModal', 's-tab-info')">Basic Info</button>
-                <button type="button" class="tab-btn font-sans" data-tab="s-tab-perms" onclick="switchTab('shareWizardModal', 's-tab-perms')">Permissions</button>
+                <button type="button" class="tab-btn active font-sans" data-tab="s-tab-info" onclick="switchTab('shareWizardModal', 's-tab-info')">Pasta e dono</button>
+                <button type="button" class="tab-btn font-sans" data-tab="s-tab-perms" onclick="switchTab('shareWizardModal', 's-tab-perms')">Permissoes SMB/ACL</button>
             </div>
             
             <div id="s-tab-info" class="tab-pane active flex flex-col gap-4 min-h-[300px]">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1">
-                        <label class="text-muted font-sans text-sm">Name *</label>
-                        <input type="text" name="name" placeholder="e.g., public" required class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+                        <label class="text-muted font-sans text-sm">Nome do share *</label>
+                        <input type="text" name="name" placeholder="ex.: documentos" required class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="text-muted font-sans text-sm">Linux Path</label>
-                        <input type="text" name="path" placeholder="e.g., /data/public" required class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+                        <label class="text-muted font-sans text-sm">Pasta no Linux</label>
+                        <input type="text" name="path" placeholder="ex.: /srv/samba/documentos" required class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
                     </div>
                 </div>
                 
                 <div class="border-t border-bg0 my-2"></div>
-                <h3 class="text-md font-ui text-fg">Linux Ownership (chown)</h3>
+                <h3 class="text-md font-ui text-fg">Dono da pasta no Linux (chown)</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1">
-                        <label class="text-muted font-sans text-sm">Owner User</label>
+                        <label class="text-muted font-sans text-sm">Usuario dono</label>
                         <select name="owner_user" class="px-3 py-2 text-fg border border-bg0 rounded-sm focus:border-acc transition-colors">
                             <?php if (isset($systemUsers)): ?>
                                 <?php foreach ($systemUsers as $u): ?>
@@ -56,7 +62,7 @@
                         </select>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="text-muted font-sans text-sm">Owner Group</label>
+                        <label class="text-muted font-sans text-sm">Grupo dono</label>
                         <select name="owner_group" class="px-3 py-2 text-fg border border-bg0 rounded-sm focus:border-acc transition-colors">
                             <?php if (isset($systemGroups)): ?>
                                 <?php foreach ($systemGroups as $g): ?>
@@ -72,27 +78,27 @@
                 <div class="space-y-1.5 mt-auto pt-4 text-fg font-sans text-[13px]">
                     <label class="flex items-center gap-2 cursor-pointer hover:bg-bg0/30 p-1 rounded-sm transition">
                         <input type="checkbox" name="hide_network" value="1" class="accent-acc w-4 h-4">
-                        <span>Hide this shared folder in "My Network Places"</span>
+                        <span>Nao listar este compartilhamento na navegacao da rede</span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer hover:bg-bg0/30 p-1 rounded-sm transition">
                         <input type="checkbox" name="hide_unreadable" value="1" class="accent-acc w-4 h-4">
-                        <span>Hide subfolders and files from users without permissions</span>
+                        <span>Ocultar arquivos e subpastas sem permissao de leitura</span>
                     </label>
                     <div class="flex flex-col">
                         <label class="flex items-center gap-2 cursor-pointer hover:bg-bg0/30 p-1 rounded-sm transition">
                             <input type="checkbox" name="enable_recycle" value="1" class="accent-acc w-4 h-4" onchange="document.getElementById('recycle_admin').disabled = !this.checked">
-                            <span>Enable recycle bin</span>
+                            <span>Ativar lixeira do Samba neste share</span>
                         </label>
                         <div class="ml-7 mb-1">
                             <label class="flex items-center gap-2 cursor-pointer text-muted hover:text-fg transition">
                                 <input type="checkbox" name="recycle_admin" id="recycle_admin" value="1" disabled class="accent-acc w-3.5 h-3.5">
-                                <span>Restrict access to administrators only</span>
+                                <span>Restringir a lixeira ao dono/admin</span>
                             </label>
                         </div>
                     </div>
                     <label class="flex items-center gap-2 cursor-pointer hover:bg-bg0/30 p-1 rounded-sm transition mt-2">
                         <input type="checkbox" name="enable_audit" value="yes" checked class="accent-acc w-4 h-4">
-                        <span class="text-muted">Enable full audit (vfs_full_audit)</span>
+                        <span class="text-muted">Ativar auditoria full_audit neste share</span>
                     </label>
                 </div>
             </div>
@@ -100,13 +106,13 @@
             <div id="s-tab-perms" class="tab-pane hidden flex-col gap-4 min-h-[300px]">
                 <div class="flex justify-between items-center mb-1">
                     <select id="permFilter" onchange="filterPerms()" class="px-3 py-1.5 bg-bg0/50 border border-bg0 rounded-sm text-fg text-sm focus:border-acc outline-none font-sans">
-                        <option value="all">All</option>
-                        <option value="users">Local users</option>
-                        <option value="groups">Local groups</option>
+                        <option value="all">Todos</option>
+                        <option value="users">Usuarios locais</option>
+                        <option value="groups">Grupos locais</option>
                     </select>
                     <div class="relative">
                         <svg class="w-4 h-4 text-muted absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        <input type="text" id="permSearch" onkeyup="filterPerms()" placeholder="Search" class="pl-9 pr-3 py-1.5 bg-bg0/50 border border-bg0 rounded-sm text-fg text-sm focus:border-acc outline-none w-48 font-sans">
+                        <input type="text" id="permSearch" onkeyup="filterPerms()" placeholder="Buscar" class="pl-9 pr-3 py-1.5 bg-bg0/50 border border-bg0 rounded-sm text-fg text-sm focus:border-acc outline-none w-48 font-sans">
                     </div>
                 </div>
                 
@@ -114,10 +120,10 @@
                     <table class="w-full text-left font-mono" id="permsTable">
                         <thead class="bg-bg0 text-muted sticky top-0 text-xs tracking-wider z-10 font-sans">
                             <tr>
-                                <th class="px-3 py-2 font-medium border-b border-bg1">User/Group</th>
-                                <th class="px-3 py-2 font-medium border-b border-bg1 text-center">No access</th>
-                                <th class="px-3 py-2 font-medium border-b border-bg1 text-center text-ok">Read/Write</th>
-                                <th class="px-3 py-2 font-medium border-b border-bg1 text-center text-acc2">Read only</th>
+                                <th class="px-3 py-2 font-medium border-b border-bg1">Usuario/Grupo</th>
+                                <th class="px-3 py-2 font-medium border-b border-bg1 text-center">Sem acesso</th>
+                                <th class="px-3 py-2 font-medium border-b border-bg1 text-center text-ok">Leitura/Escrita</th>
+                                <th class="px-3 py-2 font-medium border-b border-bg1 text-center text-acc2">Somente leitura</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-bg0 text-sm">
@@ -154,8 +160,8 @@
             </div>
             
             <div class="p-4 border-t border-bg0 bg-bg0/50 flex justify-end gap-3 mt-auto">
-                <button type="button" onclick="closeModal('shareWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-3xl font-sans tracking-wide text-sm font-medium uppercase">Cancel</button>
-                <button type="submit" class="px-5 py-2 bg-acc text-bg0 hover:bg-acc/90 transition-colors rounded-3xl font-sans tracking-wide text-sm font-medium uppercase">Save</button>
+                <button type="button" onclick="closeModal('shareWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-3xl font-sans tracking-wide text-sm font-medium uppercase">Cancelar</button>
+                <button type="submit" class="px-5 py-2 bg-acc text-bg0 hover:bg-acc/90 transition-colors rounded-3xl font-sans tracking-wide text-sm font-medium uppercase">Salvar e aplicar</button>
             </div>
         </form>
     </div>
@@ -245,20 +251,20 @@ function editShare(data) {
 
 <!-- Panel 2: Existing Shares -->
 <div class="mt-8 bg-bg1 rounded-sm border border-bg0 p-6">
-    <h2 class="text-xl font-brand font-bold text-fg mb-4 border-b border-bg0 pb-2">Existing Shares</h2>
+    <h2 class="text-xl font-brand font-bold text-fg mb-4 border-b border-bg0 pb-2">Compartilhamentos em shares.conf</h2>
     
     <?php if (empty($existingShares)): ?>
-        <p class="text-muted text-sm font-mono">No custom shares found in shares.conf.</p>
+        <p class="text-muted text-sm font-mono">Nenhum compartilhamento personalizado encontrado em /etc/samba/shares.conf.</p>
     <?php else: ?>
         <div class="overflow-x-auto">
             <table class="w-full text-left font-mono text-sm whitespace-nowrap">
                 <thead>
                     <tr class="text-muted border-b border-bg0 text-xs uppercase tracking-wider">
-                        <th class="py-3 font-normal px-2">Name</th>
-                        <th class="py-3 font-normal px-2">Path</th>
-                        <th class="py-3 font-normal px-2">Read Only</th>
-                        <th class="py-3 font-normal px-2">Valid Users</th>
-                        <th class="py-3 font-normal px-2 text-right">Actions</th>
+                        <th class="py-3 font-normal px-2">Nome</th>
+                        <th class="py-3 font-normal px-2">Pasta</th>
+                        <th class="py-3 font-normal px-2">Somente leitura</th>
+                        <th class="py-3 font-normal px-2">Usuarios permitidos</th>
+                        <th class="py-3 font-normal px-2 text-right">Acoes</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-bg0/50">

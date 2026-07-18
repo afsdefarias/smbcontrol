@@ -106,8 +106,11 @@ class SambaParser {
                 $key = $field['key'];
                 $val = $field['value'] ?? '';
                 
-                // Enabled checkbox: 1 = active, 0 = disabled (;)
-                $enabled = isset($field['enabled']) && $field['enabled'] == '1';
+                // Enabled checkbox: 1 = active, 0 = disabled (;). Parsed data does
+                // not contain "enabled", so fall back to the inverse of "disabled".
+                $enabled = array_key_exists('enabled', $field)
+                    ? $field['enabled'] == '1'
+                    : empty($field['disabled']);
                 $prefix = $enabled ? "   " : ";   ";
 
                 // Put comments back

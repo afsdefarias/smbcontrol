@@ -218,13 +218,13 @@
                     <?php 
                         $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
                         $links = [
-                            '/samba/users' => 'Users & Groups',
-                            '/samba/shares' => 'Shares',
-                            '/samba/shares-config' => 'Share Settings',
-                            '/reports' => 'Audit Reports',
-                            '/disks' => 'Storage',
-                            '/samba/conf' => 'Global Settings',
-                            '/profile' => 'Profile'
+                            '/samba/users' => 'Usuarios SMB',
+                            '/samba/shares' => 'Compartilhamentos',
+                            '/samba/shares-config' => 'Parametros dos Shares',
+                            '/reports' => 'Auditoria',
+                            '/disks' => 'Discos',
+                            '/samba/conf' => 'Configuracao Global',
+                            '/profile' => 'Perfil'
                         ];
                         foreach($links as $path => $label):
                             $active = ($currentUri === $path) ? 'text-acc border-b-2 border-acc' : 'text-muted hover:text-fg';

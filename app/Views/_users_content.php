@@ -1,16 +1,16 @@
 <div class="mb-8 flex items-baseline gap-4">
-    <h1 class="text-2xl font-brand font-bold text-fg">Users & Groups</h1>
-    <span class="text-sm text-muted font-mono">linux_samba_accounts</span>
+    <h1 class="text-2xl font-brand font-bold text-fg">Usuarios e grupos SMB</h1>
+    <span class="text-sm text-muted font-mono">Linux + banco de senhas Samba</span>
 </div>
 
 <div class="flex gap-4">
     <button onclick="openModal('userWizardModal')" class="px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        Create User
+        Criar usuario SMB
     </button>
     <button onclick="openModal('groupWizardModal')" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        Create Group
+        Criar grupo Linux
     </button>
 </div>
 
@@ -22,41 +22,41 @@
             <input type="hidden" name="action" value="create_user">
             
             <div class="p-4 border-b border-bg0 bg-bg0/50 flex justify-between items-center">
-                <h2 class="text-lg font-ui text-fg font-bold">User Creation Wizard</h2>
+                <h2 class="text-lg font-ui text-fg font-bold">Criar ou atualizar usuario Samba</h2>
                 <button type="button" onclick="closeModal('userWizardModal')" class="text-muted hover:text-err transition">&times;</button>
             </div>
             
             <div class="flex border-b border-bg0 bg-bg0/30">
-                <button type="button" class="tab-btn active" data-tab="u-tab-info" onclick="switchTab('userWizardModal', 'u-tab-info')">Basic Info</button>
-                <button type="button" class="tab-btn" data-tab="u-tab-groups" onclick="switchTab('userWizardModal', 'u-tab-groups')">Groups</button>
+                <button type="button" class="tab-btn active" data-tab="u-tab-info" onclick="switchTab('userWizardModal', 'u-tab-info')">Conta e senha</button>
+                <button type="button" class="tab-btn" data-tab="u-tab-groups" onclick="switchTab('userWizardModal', 'u-tab-groups')">Grupos</button>
             </div>
             
             <div id="u-tab-info" class="tab-pane active flex flex-col gap-4 min-h-[250px]">
                 <div class="flex flex-col gap-1">
-                    <label class="text-muted">Username</label>
+                    <label class="text-muted">Usuario Linux/Samba</label>
                     <input type="text" name="username" required class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
                 </div>
                 <div class="flex flex-col gap-1">
-                    <label class="text-muted">Samba Password <span class="text-xs opacity-70">(Leave empty if only updating groups)</span></label>
-                    <input type="password" name="password" placeholder="Required for new users" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+                    <label class="text-muted">Senha Samba <span class="text-xs opacity-70">(obrigatoria ao criar, opcional ao editar)</span></label>
+                    <input type="password" name="password" placeholder="Senha usada ao acessar o compartilhamento SMB" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
                 </div>
                 <div class="flex flex-col gap-2 mt-2">
                     <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
                         <input type="checkbox" name="create_home" value="1" class="accent-acc w-4 h-4">
-                        <span class="text-fg text-xs">Create Home Directory (/home/user)</span>
+                        <span class="text-fg text-xs">Criar pasta home no Linux (/home/usuario)</span>
                     </label>
                     <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
                         <input type="checkbox" name="create_user_group" value="1" class="accent-acc w-4 h-4">
-                        <span class="text-fg text-xs">Create User Group (same name as user)</span>
+                        <span class="text-fg text-xs">Criar grupo principal com o mesmo nome do usuario</span>
                     </label>
                 </div>
             </div>
             
             <div id="u-tab-groups" class="tab-pane hidden flex-col gap-4 min-h-[250px]">
-                <label class="text-muted">Associate to Groups (Optional)</label>
+                <label class="text-muted">Adicionar aos grupos Linux selecionados (opcional)</label>
                 <?php if (empty($systemGroups)): ?>
                     <div class="border border-bg0 rounded-sm p-3 flex-grow">
-                        <p class="text-muted text-xs">No groups found (GID >= 1000).</p>
+                        <p class="text-muted text-xs">Nenhum grupo local encontrado (GID >= 1000).</p>
                     </div>
                 <?php else: ?>
                     <div class="multi-select-container relative flex-grow" data-placeholder="Search groups..." data-accent="acc">
@@ -70,8 +70,8 @@
             </div>
             
             <div class="p-4 border-t border-bg0 bg-bg0/50 flex justify-end gap-3 mt-auto">
-                <button type="button" onclick="closeModal('userWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-sm uppercase tracking-wider text-xs">Cancel</button>
-                <button type="submit" class="px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs">Save User</button>
+                <button type="button" onclick="closeModal('userWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-sm uppercase tracking-wider text-xs">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs">Salvar usuario</button>
             </div>
         </form>
     </div>
@@ -85,27 +85,27 @@
             <input type="hidden" name="action" value="create_group">
             
             <div class="p-4 border-b border-bg0 bg-bg0/50 flex justify-between items-center">
-                <h2 class="text-lg font-ui text-fg font-bold">Group Creation Wizard</h2>
+                <h2 class="text-lg font-ui text-fg font-bold">Criar ou atualizar grupo Linux</h2>
                 <button type="button" onclick="closeModal('groupWizardModal')" class="text-muted hover:text-err transition">&times;</button>
             </div>
             
             <div class="flex border-b border-bg0 bg-bg0/30">
-                <button type="button" class="tab-btn active" data-tab="g-tab-info" onclick="switchTab('groupWizardModal', 'g-tab-info')">Basic Info</button>
-                <button type="button" class="tab-btn" data-tab="g-tab-members" onclick="switchTab('groupWizardModal', 'g-tab-members')">Members</button>
+                <button type="button" class="tab-btn active" data-tab="g-tab-info" onclick="switchTab('groupWizardModal', 'g-tab-info')">Grupo</button>
+                <button type="button" class="tab-btn" data-tab="g-tab-members" onclick="switchTab('groupWizardModal', 'g-tab-members')">Membros</button>
             </div>
             
             <div id="g-tab-info" class="tab-pane active flex flex-col gap-4 min-h-[250px]">
                 <div class="flex flex-col gap-1">
-                    <label class="text-muted">Group Name</label>
-                    <input type="text" name="groupname" required placeholder="e.g., directors" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc2 transition-colors">
+                    <label class="text-muted">Nome do grupo</label>
+                    <input type="text" name="groupname" required placeholder="ex.: financeiro" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc2 transition-colors">
                 </div>
             </div>
             
             <div id="g-tab-members" class="tab-pane hidden flex-col gap-4 min-h-[250px]">
-                <label class="text-muted">Add Users to this Group (Optional)</label>
+                <label class="text-muted">Definir membros deste grupo (opcional)</label>
                 <?php if (empty($systemUsers)): ?>
                     <div class="border border-bg0 rounded-sm p-3 flex-grow">
-                        <p class="text-muted text-xs">No users found (UID >= 1000).</p>
+                        <p class="text-muted text-xs">Nenhum usuario local encontrado (UID >= 1000).</p>
                     </div>
                 <?php else: ?>
                     <div class="multi-select-container relative flex-grow" data-placeholder="Search users..." data-accent="acc2">
@@ -119,8 +119,8 @@
             </div>
             
             <div class="p-4 border-t border-bg0 bg-bg0/50 flex justify-end gap-3 mt-auto">
-                <button type="button" onclick="closeModal('groupWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-sm uppercase tracking-wider text-xs">Cancel</button>
-                <button type="submit" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs">Create Group</button>
+                <button type="button" onclick="closeModal('groupWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-sm uppercase tracking-wider text-xs">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs">Salvar grupo</button>
             </div>
         </form>
     </div>
@@ -128,24 +128,24 @@
 
 <!-- Panel 3: Existing Users -->
 <div class="mt-6 bg-bg1 border border-bg0 p-6 rounded-sm">
-    <h2 class="text-lg font-ui text-fg mb-4 border-b border-bg0 pb-2">Existing Samba Users</h2>
+    <h2 class="text-lg font-ui text-fg mb-4 border-b border-bg0 pb-2">Usuarios cadastrados no Samba</h2>
     
     <?php if ($sambaUsers === null): ?>
         <div class="bg-warn/10 border-l-4 border-warn p-4 text-sm font-mono text-warn">
-            <strong>Action Required:</strong> The <code>www-data</code> user does not have permission to read Samba users. <br>
-            Please add <code>/usr/bin/pdbedit</code> to your sudoers file with NOPASSWD to enable user listing and management.
+            <strong>Acao necessaria:</strong> o usuario <code>www-data</code> nao tem permissao para ler usuarios Samba. <br>
+            Adicione <code>/usr/bin/pdbedit</code> ao sudoers com NOPASSWD para listar e gerenciar usuarios.
         </div>
     <?php elseif (empty($sambaUsers)): ?>
-        <p class="text-muted text-sm font-mono">No Samba users found.</p>
+        <p class="text-muted text-sm font-mono">Nenhum usuario Samba encontrado.</p>
     <?php else: ?>
         <div class="overflow-x-auto">
             <table class="w-full text-left font-mono text-sm">
                 <thead>
                     <tr class="text-muted border-b border-bg0">
-                        <th class="pb-2 font-normal">Username</th>
-                        <th class="pb-2 font-normal">Groups</th>
-                        <th class="pb-2 font-normal">Status</th>
-                        <th class="pb-2 font-normal text-right">Actions</th>
+                        <th class="pb-2 font-normal">Usuario</th>
+                        <th class="pb-2 font-normal">Grupos Linux</th>
+                        <th class="pb-2 font-normal">Status Samba</th>
+                        <th class="pb-2 font-normal text-right">Acoes</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-bg0/50">
