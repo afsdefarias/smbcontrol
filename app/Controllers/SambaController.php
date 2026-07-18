@@ -399,6 +399,87 @@ class SambaController {
         return date('Y-m-d H:i', $time);
     }
 
+    private function getGroupRecords(array $systemUsers, array $systemGroups): array {
+        $passwdGroups = [];
+        $passwdFile = @file('/etc/passwd') ?: [];
+        foreach ($passwdFile as $line) {
+            $parts = explode(':', trim($line));
+            if (count($parts) >= 4 && in_array($parts[0], $systemUsers, true)) {
+                $passwdGroups[(int)$parts[3]][] = $parts[0];
+            }
+        }
+
+        $groupsToShow = array_fill_keys($systemGroups, true);
+        foreach ($systemUsers as $user) {
+            $groups = preg_split('/\s+/', trim(shell_exec('id -Gn ' . escapeshellarg($user)) ?: ''), -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($groups as $group) {
+                $groupsToShow[$group] = true;
+            }
+        }
+
+        $records = [];
+        $groupFile = @file('/etc/group') ?: [];
+        foreach ($groupFile as $line) {
+            $parts = explode(':', trim($line));
+            if (count($parts) < 4 || !isset($groupsToShow[$parts[0]])) {
+                continue;
+            }
+
+            $gid = (int)$parts[2];
+            $members = array_filter(array_map('trim', explode(',', $parts[3])));
+            foreach ($passwdGroups[$gid] ?? [] as $primaryMember) {
+                $members[] = $primaryMember;
+            }
+            $members = array_values(array_unique($members));
+            sort($members);
+
+            $records[$parts[0]] = [
+                'name' => $parts[0],
+                'gid' => $gid,
+                'members' => $members,
+                'manageable' => $gid >= 1000 && $gid < 60000,
+            ];
+        }
+
+        uasort($records, fn($a, $b) => strcasecmp($a['name'], $b['name']));
+        return $records;
+    }
+
+    private function getGroupShareAccess(array $groupNames): array {
+        $access = array_fill_keys($groupNames, []);
+
+        try {
+            $parsed = SambaParser::parse($this->readRootFile(self::SHARES_CONF));
+        } catch (\Exception $e) {
+            return $access;
+        }
+
+        foreach ($parsed as $shareName => $fields) {
+            if (strtolower($shareName) === 'global' || !is_array($fields)) {
+                continue;
+            }
+
+            $indexed = $this->sectionFields($fields);
+            $readOnly = strtolower($indexed['read only'] ?? 'yes');
+            $validUsers = preg_split('/[\s,]+/', $indexed['valid users'] ?? '', -1, PREG_SPLIT_NO_EMPTY);
+            $readList = preg_split('/[\s,]+/', $indexed['read list'] ?? '', -1, PREG_SPLIT_NO_EMPTY);
+            $writeList = preg_split('/[\s,]+/', $indexed['write list'] ?? '', -1, PREG_SPLIT_NO_EMPTY);
+
+            foreach ($groupNames as $groupName) {
+                $principal = '@' . $groupName;
+                if (in_array($principal, $writeList, true)) {
+                    $access[$groupName][] = ['share' => $shareName, 'permission' => 'write'];
+                } elseif (in_array($principal, $readList, true)) {
+                    $access[$groupName][] = ['share' => $shareName, 'permission' => 'read'];
+                } elseif (in_array($principal, $validUsers, true)) {
+                    $access[$groupName][] = ['share' => $shareName, 'permission' => $readOnly === 'no' ? 'write' : 'read'];
+                }
+            }
+        }
+
+        return $access;
+    }
+
     public function conf() {
         try {
             $this->ensureSharesConfig();
@@ -761,34 +842,55 @@ class SambaController {
                     exit;
                 }
 
-                if ($action === 'create_group') {
-                    $groupname = trim($_POST['groupname'] ?? '');
-                    $users = $_POST['users'] ?? [];
+	                if ($action === 'create_group') {
+	                    $groupname = trim($_POST['groupname'] ?? '');
+	                    $users = $_POST['users'] ?? [];
 
-                    if (!$this->isValidAccountName($groupname)) {
-                        throw new \InvalidArgumentException(smb_t('Invalid group name.', 'Nome de grupo inválido.'));
-                    }
+	                    if (!$this->isValidAccountName($groupname)) {
+	                        throw new \InvalidArgumentException(smb_t('Invalid group name.', 'Nome de grupo inválido.'));
+	                    }
 
-                    $groupEsc = escapeshellarg($groupname);
-                    if (!$this->linuxGroupExists($groupname)) {
-                        $this->runSudo("/usr/sbin/groupadd $groupEsc", smb_t('Could not create Linux group', 'Não foi possível criar o grupo Linux'));
-                    }
+	                    $groupEsc = escapeshellarg($groupname);
+	                    $groupExists = $this->linuxGroupExists($groupname);
+	                    if ($groupExists) {
+	                        $existing = $this->getGroupRecords($systemUsers, array_values(array_unique(array_merge($systemGroups, [$groupname]))));
+	                        if (isset($existing[$groupname]) && !$existing[$groupname]['manageable']) {
+	                            throw new \InvalidArgumentException(smb_t('System/default groups cannot be managed here. Create a department group instead.', 'Grupos de sistema/padrão não podem ser gerenciados aqui. Crie um grupo de setor.'));
+	                        }
+	                    } else {
+	                        $this->runSudo("/usr/sbin/groupadd $groupEsc", smb_t('Could not create Linux group', 'Não foi possível criar o grupo Linux'));
+	                    }
 
-                    $validUsers = [];
-                    foreach ($users as $user) {
+	                    $validUsers = [];
+	                    foreach ($users as $user) {
                         if (in_array($user, $systemUsers, true)) {
-                            $validUsers[] = $user;
-                        }
-                    }
-                    if (!empty($validUsers)) {
-                        $usersStr = escapeshellarg(implode(',', $validUsers));
-                        $this->runSudo("/usr/bin/gpasswd -M $usersStr $groupEsc", smb_t('Could not update group members', 'Não foi possível atualizar membros do grupo'));
-                    }
+	                            $validUsers[] = $user;
+	                        }
+	                    }
+	                    $usersStr = escapeshellarg(implode(',', $validUsers));
+	                    $this->runSudo("/usr/bin/gpasswd -M $usersStr $groupEsc", smb_t('Could not update group members', 'Não foi possível atualizar membros do grupo'));
 
-                    $_SESSION['message'] = smb_t("Group $groupname created/updated in Linux.", "Grupo $groupname criado/atualizado no Linux.");
-                    header('Location: /samba/users');
-                    exit;
-                }
+	                    $_SESSION['message'] = smb_t("Group $groupname created/updated in Linux.", "Grupo $groupname criado/atualizado no Linux.");
+	                    header('Location: /samba/users');
+	                    exit;
+	                }
+
+	                if ($action === 'delete_group') {
+	                    $groupname = trim($_POST['groupname'] ?? '');
+	                    if (!$this->isValidAccountName($groupname) || !$this->linuxGroupExists($groupname)) {
+	                        throw new \InvalidArgumentException(smb_t('Invalid group or group not found.', 'Grupo inválido ou não encontrado.'));
+	                    }
+
+	                    $existing = $this->getGroupRecords($systemUsers, array_values(array_unique(array_merge($systemGroups, [$groupname]))));
+	                    if (isset($existing[$groupname]) && !$existing[$groupname]['manageable']) {
+	                        throw new \InvalidArgumentException(smb_t('System/default groups cannot be deleted here.', 'Grupos de sistema/padrão não podem ser excluídos aqui.'));
+	                    }
+
+	                    $this->runSudo('/usr/sbin/groupdel ' . escapeshellarg($groupname), smb_t('Could not delete Linux group', 'Não foi possível excluir o grupo Linux'));
+	                    $_SESSION['message'] = smb_t("Group $groupname deleted from Linux.", "Grupo $groupname excluído do Linux.");
+	                    header('Location: /samba/users');
+	                    exit;
+	                }
 
                 if (in_array($action, ['delete_user', 'enable_user', 'disable_user'], true)) {
                     $targetUser = $_POST['target_user'] ?? '';
@@ -848,6 +950,9 @@ class SambaController {
                 }
             }
         }
+
+        $groupRecords = $this->getGroupRecords($systemUsers, $systemGroups);
+        $groupShareAccess = $this->getGroupShareAccess(array_keys($groupRecords));
 
         require __DIR__ . '/../Views/users.php';
     }

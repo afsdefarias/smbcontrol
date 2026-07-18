@@ -8,9 +8,9 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         <?= smb_t('Create SMB User', 'Criar usuário SMB') ?>
     </button>
-    <button onclick="openModal('groupWizardModal')" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        <?= smb_t('Create Linux Group', 'Criar grupo Linux') ?>
+    <button onclick="openGroupManager()" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        <?= smb_t('Manage Groups', 'Gerenciar grupos') ?>
     </button>
 </div>
 
@@ -40,15 +40,15 @@
                     <label class="text-muted"><?= smb_t('Samba password', 'Senha Samba') ?> <span class="text-xs opacity-70"><?= smb_t('(required when creating, optional when editing)', '(obrigatória ao criar, opcional ao editar)') ?></span></label>
                     <input type="password" name="password" placeholder="<?= htmlspecialchars(smb_t('Password used to access SMB shares', 'Senha usada para acessar compartilhamentos SMB')) ?>" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
                 </div>
-                <div class="flex flex-col gap-2 mt-2">
-                    <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
-                        <input type="checkbox" name="create_home" value="1" class="accent-acc w-4 h-4">
-                        <span class="text-fg text-xs"><?= smb_t('Create Linux home directory (/home/user)', 'Criar pasta home no Linux (/home/usuário)') ?></span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
-                        <input type="checkbox" name="create_user_group" value="1" class="accent-acc w-4 h-4">
-                        <span class="text-fg text-xs"><?= smb_t('Create primary group with the same name as the user', 'Criar grupo principal com o mesmo nome do usuário') ?></span>
-                    </label>
+	                <div class="flex flex-col gap-2 mt-2">
+	                    <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
+	                        <input type="checkbox" name="create_home" value="1" class="check-square">
+	                        <span class="text-fg text-xs"><?= smb_t('Create Linux home directory (/home/user)', 'Criar pasta home no Linux (/home/usuário)') ?></span>
+	                    </label>
+	                    <label class="flex items-center space-x-2 cursor-pointer p-2 border border-bg0 rounded-sm bg-bg0/30 hover:bg-bg0/50 transition">
+	                        <input type="checkbox" name="create_user_group" value="1" class="check-square">
+	                        <span class="text-fg text-xs"><?= smb_t('Create primary group with the same name as the user', 'Criar grupo principal com o mesmo nome do usuário') ?></span>
+	                    </label>
                 </div>
             </div>
             
@@ -77,52 +77,121 @@
     </div>
 </div>
 
-<!-- Group Wizard Modal -->
+<!-- Group Manager Modal -->
 <div id="groupWizardModal" class="modal-overlay">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <form action="/samba/users" method="POST" class="flex flex-col h-full font-mono text-sm">
-            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
-            <input type="hidden" name="action" value="create_group">
-            
-            <div class="p-4 border-b border-bg0 bg-bg0/50 flex justify-between items-center">
-                <h2 class="text-lg font-ui text-fg font-bold"><?= smb_t('Create or update Linux group', 'Criar ou atualizar grupo Linux') ?></h2>
-                <button type="button" onclick="closeModal('groupWizardModal')" class="text-muted hover:text-err transition">&times;</button>
-            </div>
-            
-            <div class="flex border-b border-bg0 bg-bg0/30">
-                <button type="button" class="tab-btn active" data-tab="g-tab-info" onclick="switchTab('groupWizardModal', 'g-tab-info')"><?= smb_t('Group', 'Grupo') ?></button>
-                <button type="button" class="tab-btn" data-tab="g-tab-members" onclick="switchTab('groupWizardModal', 'g-tab-members')"><?= smb_t('Members', 'Membros') ?></button>
-            </div>
-            
-            <div id="g-tab-info" class="tab-pane active flex flex-col gap-4 min-h-[250px]">
+    <div class="modal-content max-w-6xl" onclick="event.stopPropagation()">
+        <div class="p-4 border-b border-bg0 bg-bg0/50 flex justify-between items-center">
+            <h2 class="text-lg font-ui text-fg font-bold"><?= smb_t('Manage groups', 'Gerenciar grupos') ?></h2>
+            <button type="button" onclick="closeModal('groupWizardModal')" class="text-muted hover:text-err transition">&times;</button>
+        </div>
+
+        <div class="p-5 grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-5 font-mono text-sm overflow-y-auto">
+            <form id="groupForm" action="/samba/users" method="POST" class="bg-bg0/30 border border-bg0 rounded-sm p-4 flex flex-col gap-4">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                <input type="hidden" name="action" value="create_group">
+
+                <div class="flex items-center justify-between gap-3 border-b border-bg0 pb-3">
+                    <h3 id="groupFormTitle" class="text-fg font-ui font-bold"><?= smb_t('Create department group', 'Criar grupo de setor') ?></h3>
+                    <button type="button" onclick="resetGroupForm()" class="px-2 py-1 bg-bg0 text-muted hover:text-acc border border-bg0 rounded-sm text-xs uppercase tracking-wider">
+                        <?= smb_t('New', 'Novo') ?>
+                    </button>
+                </div>
+
                 <div class="flex flex-col gap-1">
                     <label class="text-muted"><?= smb_t('Group name', 'Nome do grupo') ?></label>
                     <input type="text" name="groupname" required placeholder="<?= htmlspecialchars(smb_t('e.g. finance', 'ex.: financeiro')) ?>" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc2 transition-colors">
                 </div>
-            </div>
-            
-            <div id="g-tab-members" class="tab-pane hidden flex-col gap-4 min-h-[250px]">
-                <label class="text-muted"><?= smb_t('Set group members (optional)', 'Definir membros deste grupo (opcional)') ?></label>
-                <?php if (empty($systemUsers)): ?>
-                    <div class="border border-bg0 rounded-sm p-3 flex-grow">
-                        <p class="text-muted text-xs"><?= smb_t('No local users found (UID >= 1000).', 'Nenhum usuário local encontrado (UID >= 1000).') ?></p>
-                    </div>
-                <?php else: ?>
-                    <div class="multi-select-container relative flex-grow" data-placeholder="<?= htmlspecialchars(smb_t('Search users...', 'Buscar usuários...')) ?>" data-accent="acc2">
-                        <select multiple name="users[]" class="hidden">
-                            <?php foreach ($systemUsers as $usr): ?>
-                                <option value="<?= htmlspecialchars($usr) ?>"><?= htmlspecialchars($usr) ?></option>
+
+                <div class="flex flex-col gap-2 min-h-[230px]">
+                    <label class="text-muted"><?= smb_t('Members', 'Membros') ?></label>
+                    <?php if (empty($systemUsers)): ?>
+                        <div class="border border-bg0 rounded-sm p-3 flex-grow">
+                            <p class="text-muted text-xs"><?= smb_t('No local users found (UID >= 1000).', 'Nenhum usuário local encontrado (UID >= 1000).') ?></p>
+                        </div>
+                    <?php else: ?>
+                        <div id="groupMembersSelect" class="multi-select-container relative flex-grow" data-placeholder="<?= htmlspecialchars(smb_t('Search users...', 'Buscar usuários...')) ?>" data-accent="acc2">
+                            <select multiple name="users[]" class="hidden">
+                                <?php foreach ($systemUsers as $usr): ?>
+                                    <option value="<?= htmlspecialchars($usr) ?>"><?= htmlspecialchars($usr) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <button type="submit" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs">
+                    <?= smb_t('Save Group', 'Salvar grupo') ?>
+                </button>
+            </form>
+
+            <div class="border border-bg0 rounded-sm overflow-hidden bg-bg0/20">
+                <table class="w-full text-left text-xs">
+                    <thead class="text-muted border-b border-bg0 bg-bg0/50 uppercase tracking-wider">
+                        <tr>
+                            <th class="px-3 py-2 font-medium"><?= smb_t('Group', 'Grupo') ?></th>
+                            <th class="px-3 py-2 font-medium"><?= smb_t('Members', 'Membros') ?></th>
+                            <th class="px-3 py-2 font-medium"><?= smb_t('Share access', 'Acesso aos shares') ?></th>
+                            <th class="px-3 py-2 font-medium text-right"><?= smb_t('Actions', 'Ações') ?></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-bg0/60">
+                        <?php if (empty($groupRecords ?? [])): ?>
+                            <tr>
+                                <td colspan="4" class="px-3 py-8 text-center text-muted italic"><?= smb_t('No groups found.', 'Nenhum grupo encontrado.') ?></td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($groupRecords as $group): ?>
+                                <?php
+                                    $members = $group['members'] ?? [];
+                                    $accessRows = $groupShareAccess[$group['name']] ?? [];
+                                ?>
+                                <tr class="hover:bg-bg0/40 transition-colors">
+                                    <td class="px-3 py-3 text-fg">
+                                        <div class="font-bold"><?= htmlspecialchars($group['name']) ?></div>
+                                        <?php if (!$group['manageable']): ?>
+                                            <div class="mt-1 text-[10px] text-muted uppercase tracking-wider"><?= smb_t('System group', 'Grupo do sistema') ?></div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="px-3 py-3 text-muted max-w-[220px]">
+                                        <?= !empty($members) ? htmlspecialchars(implode(', ', $members)) : '-' ?>
+                                    </td>
+                                    <td class="px-3 py-3">
+                                        <?php if (empty($accessRows)): ?>
+                                            <span class="text-muted">-</span>
+                                        <?php else: ?>
+                                            <div class="flex flex-wrap gap-1.5">
+                                                <?php foreach ($accessRows as $access): ?>
+                                                    <span class="px-2 py-0.5 border <?= $access['permission'] === 'write' ? 'border-ok/30 text-ok bg-ok/10' : 'border-acc2/30 text-acc2 bg-acc2/10' ?> rounded-sm">
+                                                        <?= htmlspecialchars($access['share']) ?>: <?= $access['permission'] === 'write' ? smb_t('Read/Write', 'Leitura/Escrita') : smb_t('Read only', 'Somente leitura') ?>
+                                                    </span>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="px-3 py-3 text-right whitespace-nowrap">
+                                        <?php if ($group['manageable']): ?>
+                                            <button type="button" class="px-2 py-1 bg-acc/10 text-acc border border-acc/20 hover:bg-acc hover:text-bg0 transition-colors rounded-sm text-xs mr-2" onclick='editGroup(<?= json_encode($group['name']) ?>, <?= json_encode($members) ?>)'>
+                                                <?= smb_t('Edit', 'Editar') ?>
+                                            </button>
+                                            <form action="/samba/users" method="POST" class="inline-block" onsubmit="return confirm('<?= htmlspecialchars(smb_t('Delete this group? Users will not be deleted.', 'Excluir este grupo? Os usuários não serão excluídos.')) ?>');">
+                                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                                                <input type="hidden" name="action" value="delete_group">
+                                                <input type="hidden" name="groupname" value="<?= htmlspecialchars($group['name']) ?>">
+                                                <button type="submit" class="px-2 py-1 bg-err/10 text-err border border-err/20 hover:bg-err hover:text-bg0 transition-colors rounded-sm text-xs">
+                                                    <?= smb_t('Delete', 'Excluir') ?>
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                            <span class="text-muted text-[10px] uppercase"><?= smb_t('Protected', 'Protegido') ?></span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
-                        </select>
-                    </div>
-                <?php endif; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
-            
-            <div class="p-4 border-t border-bg0 bg-bg0/50 flex justify-end gap-3 mt-auto">
-                <button type="button" onclick="closeModal('groupWizardModal')" class="px-4 py-2 border border-bg0 text-fg hover:bg-bg0 transition-colors rounded-sm uppercase tracking-wider text-xs"><?= smb_t('Cancel', 'Cancelar') ?></button>
-                <button type="submit" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs"><?= smb_t('Save Group', 'Salvar grupo') ?></button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
@@ -140,7 +209,7 @@
     <?php else: ?>
         <div class="overflow-x-auto">
             <table class="w-full text-left font-mono text-sm">
-                <thead>
+	                <thead>
 	                    <tr class="text-muted border-b border-bg0">
 	                        <th class="pb-2 font-normal"><?= smb_t('User', 'Usuário') ?></th>
 	                        <th class="pb-2 font-normal"><?= smb_t('Group', 'Grupo') ?></th>
@@ -149,10 +218,10 @@
 	                        <th class="pb-2 font-normal"><?= smb_t('Last Online', 'Última vez online') ?></th>
 	                        <th class="pb-2 font-normal text-right"><?= smb_t('Actions', 'Ações') ?></th>
 	                    </tr>
-                </thead>
+	                </thead>
                 <tbody class="divide-y divide-bg0/50">
                     <?php foreach ($sambaUsers as $user): ?>
-                        <tr class="hover:bg-bg0/20 transition-colors">
+	                        <tr class="hover:bg-bg0/20 transition-colors">
 	                            <td class="py-3 text-fg"><?= htmlspecialchars($user['username']) ?></td>
 	                            <td class="py-3 text-fg opacity-70 text-xs"><?= htmlspecialchars($user['groups'] ?? '-') ?></td>
 	                            <td class="py-3">
@@ -334,6 +403,16 @@ class MultiSelect {
         this.renderChips();
         this.renderDropdown();
     }
+
+    setSelected(values) {
+        this.selectedValues = new Set(values);
+        Array.from(this.select.options).forEach(opt => {
+            opt.selected = this.selectedValues.has(opt.value);
+        });
+        this.input.value = '';
+        this.renderChips();
+        this.renderDropdown();
+    }
     
     renderChips() {
         Array.from(this.chipContainer.querySelectorAll('.multi-chip')).forEach(c => c.remove());
@@ -368,7 +447,31 @@ class MultiSelect {
 
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.multi-select-container').forEach(el => {
-        new MultiSelect(el);
+        el.multiSelect = new MultiSelect(el);
     });
 });
+
+function openGroupManager() {
+    resetGroupForm();
+    openModal('groupWizardModal');
+}
+
+function resetGroupForm() {
+    const form = document.getElementById('groupForm');
+    if (!form) return;
+    form.reset();
+    form.querySelector('input[name=groupname]').readOnly = false;
+    document.getElementById('groupFormTitle').textContent = <?= json_encode(smb_t('Create department group', 'Criar grupo de setor')) ?>;
+    document.getElementById('groupMembersSelect')?.multiSelect?.setSelected([]);
+}
+
+function editGroup(groupName, members) {
+    const form = document.getElementById('groupForm');
+    if (!form) return;
+    const nameInput = form.querySelector('input[name=groupname]');
+    nameInput.value = groupName;
+    nameInput.readOnly = true;
+    document.getElementById('groupFormTitle').textContent = <?= json_encode(smb_t('Edit group members', 'Editar membros do grupo')) ?>;
+    document.getElementById('groupMembersSelect')?.multiSelect?.setSelected(members || []);
+}
 </script>
