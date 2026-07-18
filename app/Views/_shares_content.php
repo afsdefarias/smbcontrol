@@ -41,9 +41,9 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="text-muted font-sans text-sm"><?= smb_t('Linux path', 'Pasta no Linux') ?></label>
-                        <div class="flex">
-                            <input type="text" name="path" value="/srv/samba/" placeholder="<?= htmlspecialchars(smb_t('e.g. /srv/samba/documents', 'ex.: /srv/samba/documentos')) ?>" required class="min-w-0 flex-1 px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-l-sm focus:border-acc transition-colors">
-                            <button type="button" onclick="openPathBrowser()" class="w-11 flex items-center justify-center border border-l-0 border-bg0 bg-bg0 text-muted hover:text-acc hover:border-acc transition-colors rounded-r-sm" title="<?= htmlspecialchars(smb_t('Browse folders', 'Navegar pelas pastas')) ?>">
+                        <div class="flex rounded-sm border border-bg0 bg-bg0 focus-within:border-acc focus-within:shadow-[0_0_0_1px_var(--acc)] transition-colors">
+                            <input type="text" name="path" value="/srv/samba/" placeholder="<?= htmlspecialchars(smb_t('e.g. /srv/samba/documents', 'ex.: /srv/samba/documentos')) ?>" required class="min-w-0 flex-1 px-3 py-2 text-fg placeholder:text-muted/50 border-0 focus:shadow-none">
+                            <button type="button" onclick="openPathBrowser()" class="w-11 flex items-center justify-center border-l border-bg1 bg-bg0 text-muted hover:text-acc hover:bg-acc/10 transition-colors" title="<?= htmlspecialchars(smb_t('Browse folders', 'Navegar pelas pastas')) ?>">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h6l2 2h10v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
                                 </svg>
