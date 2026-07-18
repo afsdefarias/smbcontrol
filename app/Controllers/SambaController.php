@@ -118,6 +118,24 @@ class SambaController {
         return implode(' ', array_values(array_unique($items)));
     }
 
+    private function setSambaPassword(string $username, string $password): void {
+        $tmpPass = '/tmp/smbcontrol_smbpass_' . bin2hex(random_bytes(12));
+        $userEsc = escapeshellarg($username);
+
+        try {
+            if (file_put_contents($tmpPass, $password . "\n" . $password . "\n", LOCK_EX) === false) {
+                throw new \RuntimeException('Nao foi possivel criar arquivo temporario da senha Samba.');
+            }
+            chmod($tmpPass, 0600);
+            $this->runSudo("/usr/bin/smbpasswd -a -s $userEsc < " . escapeshellarg($tmpPass), 'Nao foi possivel gravar a senha Samba');
+            $this->runSudo("/usr/bin/smbpasswd -e $userEsc", 'Nao foi possivel ativar o usuario Samba');
+        } finally {
+            if (is_file($tmpPass)) {
+                @unlink($tmpPass);
+            }
+        }
+    }
+
     public function conf() {
         try {
             $this->ensureSharesConfig();
@@ -395,11 +413,7 @@ class SambaController {
                     }
 
                     if ($password !== '') {
-                        $tmpPass = '/tmp/smbpass_' . bin2hex(random_bytes(8));
-                        file_put_contents($tmpPass, $password . "\n" . $password . "\n");
-                        $this->runSudo("/usr/bin/smbpasswd -a -s $userEsc < " . escapeshellarg($tmpPass), 'Nao foi possivel gravar a senha Samba');
-                        @unlink($tmpPass);
-                        $this->runSudo("/usr/bin/smbpasswd -e $userEsc", 'Nao foi possivel ativar o usuario Samba');
+                        $this->setSambaPassword($username, $password);
                         $_SESSION['message'] = "Usuario $username criado/atualizado no Linux e no Samba.";
                     } else {
                         $_SESSION['message'] = "Usuario $username atualizado nos grupos Linux. Senha Samba mantida.";
