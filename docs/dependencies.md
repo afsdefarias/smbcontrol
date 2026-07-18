@@ -34,7 +34,7 @@ Execute `sudo visudo` no terminal.
 Role a tela até o final do arquivo (usando as setas do teclado) e adicione exatamente a linha abaixo. Ela diz ao Linux que o usuário www-data tem permissão exclusiva para iniciar, parar, reiniciar e checar o status do smbd como root, sem bloqueios de senha (além dos demais comandos necessários para editar arquivos e pastas):
 
 ```sudoers
-www-data ALL=(root) NOPASSWD: /usr/bin/systemctl *, /usr/bin/cat *, /usr/bin/testparm *, /usr/bin/cp *, /usr/bin/mkdir *, /usr/bin/chown *, /usr/bin/chmod *, /usr/bin/setfacl *, /usr/bin/getfacl *, /usr/sbin/useradd *, /usr/bin/smbpasswd *, /usr/sbin/groupadd *, /usr/sbin/usermod *, /usr/bin/gpasswd *, /usr/sbin/userdel *, /usr/bin/pdbedit *, /usr/sbin/mkfs.ext4 *, /usr/sbin/mkfs.xfs *, /usr/sbin/blkid *, /usr/bin/lsblk *, /usr/bin/mount *, /usr/bin/umount *, /usr/bin/sed *, /usr/bin/rmdir *, /usr/bin/touch *, /usr/bin/rm *, /usr/bin/sh *, /bin/sh *
+www-data ALL=(root) NOPASSWD: /usr/bin/systemctl *, /usr/bin/cat *, /usr/bin/testparm *, /usr/bin/cp *, /usr/bin/mkdir *, /usr/bin/chown *, /usr/bin/chmod *, /usr/bin/setfacl *, /usr/bin/getfacl *, /usr/bin/find *, /usr/sbin/useradd *, /usr/bin/smbpasswd *, /usr/sbin/groupadd *, /usr/sbin/usermod *, /usr/bin/gpasswd *, /usr/sbin/userdel *, /usr/bin/pdbedit *, /usr/sbin/mkfs.ext4 *, /usr/sbin/mkfs.xfs *, /usr/sbin/blkid *, /usr/bin/lsblk *, /usr/bin/mount *, /usr/bin/umount *, /usr/bin/sed *, /usr/bin/rmdir *, /usr/bin/touch *, /usr/bin/rm *, /usr/bin/sh *, /bin/sh *
 ```
 
 *(Nota: O painel utiliza `sh -c` para concatenar arquivos, portanto a permissão do `sh` é necessária. Caso o caminho do seu sistema mude, ajuste `/usr/bin/` para `/bin/` ou `/sbin/` conforme necessário).*

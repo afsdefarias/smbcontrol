@@ -261,18 +261,44 @@
                 <a href="/dashboard" class="text-acc font-brand font-bold text-xl tracking-wide">SMBControl</a>
                 
                 <nav class="hidden md:flex gap-6 text-sm font-medium">
-                    <?php 
-                        $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-                        $links = [
-                            '/samba/users' => smb_t('SMB Users', 'Usuários SMB'),
-                            '/samba/shares' => smb_t('Shares', 'Compartilhamentos'),
-                            '/samba/shares-config' => smb_t('Share Parameters', 'Parâmetros dos Shares'),
-                            '/reports' => smb_t('Audit', 'Auditoria'),
-                            '/disks' => smb_t('Storage', 'Armazenamento'),
-                            '/samba/conf' => smb_t('Global Config', 'Configuração Global'),
-                            '/profile' => smb_t('Profile', 'Perfil')
-                        ];
-                        foreach($links as $path => $label):
+	                    <?php
+	                        $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+	                        $hasRecycleShares = false;
+	                        try {
+	                            $sharesConf = shell_exec('sudo -n /usr/bin/cat /etc/samba/shares.conf 2>/dev/null');
+	                            if (is_string($sharesConf) && trim($sharesConf) !== '' && class_exists(\App\Services\SambaParser::class)) {
+	                                foreach (\App\Services\SambaParser::parse($sharesConf) as $section => $fields) {
+	                                    if (strtolower($section) === 'global' || !is_array($fields)) {
+	                                        continue;
+	                                    }
+	                                    foreach ($fields as $field) {
+	                                        if (!empty($field['is_standalone_comment']) || strtolower($field['key'] ?? '') !== 'vfs objects') {
+	                                            continue;
+	                                        }
+	                                        $vfsObjects = preg_split('/\s+/', strtolower($field['value'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
+	                                        if (in_array('recycle', $vfsObjects, true)) {
+	                                            $hasRecycleShares = true;
+	                                            break 2;
+	                                        }
+	                                    }
+	                                }
+	                            }
+	                        } catch (\Throwable $e) {
+	                            $hasRecycleShares = false;
+	                        }
+	                        $links = [
+	                            '/samba/users' => smb_t('SMB Users', 'Usuários SMB'),
+	                            '/samba/shares' => smb_t('Shares', 'Compartilhamentos'),
+	                            '/samba/shares-config' => smb_t('Share Parameters', 'Parâmetros dos Shares'),
+	                            '/reports' => smb_t('Audit', 'Auditoria'),
+	                            '/disks' => smb_t('Storage', 'Armazenamento'),
+	                            '/samba/conf' => smb_t('Global Config', 'Configuração Global'),
+	                            '/profile' => smb_t('Profile', 'Perfil')
+	                        ];
+	                        if ($hasRecycleShares) {
+	                            $links = array_slice($links, 0, 3, true) + ['/recycle' => smb_t('Recycle Bin', 'Lixeira')] + array_slice($links, 3, null, true);
+	                        }
+	                        foreach($links as $path => $label):
                             $active = ($currentUri === $path) ? 'text-acc border-b-2 border-acc' : 'text-muted hover:text-fg';
                     ?>
                         <a href="<?= $path ?>" class="h-14 flex items-center capitalize transition-colors <?= $active ?>">

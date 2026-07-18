@@ -87,6 +87,9 @@ if ($uri === '/login') {
         case '/samba/shares':
             (new SambaController())->shares();
             break;
+        case '/recycle':
+            (new SambaController())->recycle();
+            break;
         case '/samba/users':
             (new SambaController())->users();
             break;

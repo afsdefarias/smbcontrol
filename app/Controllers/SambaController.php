@@ -118,6 +118,175 @@ class SambaController {
         return implode(' ', array_values(array_unique($items)));
     }
 
+    private function sectionFields(array $fields): array {
+        $indexed = [];
+        foreach ($fields as $field) {
+            if (!empty($field['is_standalone_comment']) || empty($field['key'])) {
+                continue;
+            }
+            $indexed[strtolower(trim($field['key']))] = trim($field['value'] ?? '');
+        }
+        return $indexed;
+    }
+
+    private function recycleShares(): array {
+        $shares = [];
+        $parsed = SambaParser::parse($this->readRootFile(self::SHARES_CONF));
+
+        foreach ($parsed as $shareName => $fields) {
+            if (strtolower($shareName) === 'global' || !is_array($fields)) {
+                continue;
+            }
+
+            $indexed = $this->sectionFields($fields);
+            $vfsObjects = preg_split('/\s+/', strtolower($indexed['vfs objects'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
+            $path = $indexed['path'] ?? '';
+
+            if ($path === '' || !in_array('recycle', $vfsObjects, true)) {
+                continue;
+            }
+
+            $repository = $indexed['recycle:repository'] ?? '#recycle';
+            $shares[$shareName] = [
+                'name' => $shareName,
+                'path' => rtrim($path, '/'),
+                'repository' => trim($repository),
+                'keeptree' => strtolower($indexed['recycle:keeptree'] ?? 'no') === 'yes',
+            ];
+        }
+
+        return $shares;
+    }
+
+    private function recycleBaseRelative(string $repository): string {
+        $repository = trim($repository);
+        if ($repository === '') {
+            return '#recycle';
+        }
+
+        $repository = preg_replace('#/%U(?:/|$).*#', '', $repository) ?: $repository;
+        $repository = preg_replace('#/%u(?:/|$).*#', '', $repository) ?: $repository;
+        if (str_starts_with($repository, '/')) {
+            return ltrim(basename($repository), '/');
+        }
+
+        return trim($repository, '/');
+    }
+
+    private function splitRecyclePath(array $share, string $relativePath): array {
+        $base = $this->recycleBaseRelative($share['repository']);
+        $path = trim($relativePath, '/');
+        $insideRecycle = $path;
+
+        if ($base !== '' && ($path === $base || str_starts_with($path, $base . '/'))) {
+            $insideRecycle = trim(substr($path, strlen($base)), '/');
+        }
+
+        $user = smb_t('Unknown', 'Desconhecido');
+        $originalRelative = $insideRecycle;
+        if (preg_match('#%(U|u)#', $share['repository']) && $insideRecycle !== '') {
+            $parts = explode('/', $insideRecycle, 2);
+            $user = $parts[0] !== '' ? $parts[0] : $user;
+            $originalRelative = $parts[1] ?? basename($relativePath);
+        }
+
+        if ($originalRelative === '') {
+            $originalRelative = basename($relativePath);
+        }
+
+        return [$user, $originalRelative];
+    }
+
+    private function assertSafeRelativePath(string $path): void {
+        if ($path === '' || str_contains($path, "\0") || str_starts_with($path, '/') || preg_match('#(^|/)\.\.(/|$)#', $path)) {
+            throw new \InvalidArgumentException(smb_t('Invalid recycle item path.', 'Caminho do item da lixeira inválido.'));
+        }
+    }
+
+    private function listRecycleItems(array $shares, string $filter): array {
+        $items = [];
+
+        foreach ($shares as $share) {
+            $base = $this->recycleBaseRelative($share['repository']);
+            $recycleRoot = $share['path'] . '/' . $base;
+            $findCommand = '/usr/bin/find ' . escapeshellarg($recycleRoot) . ' -type f -printf ' . escapeshellarg("%p\t%s\t%T@\t%TY-%Tm-%Td %TH:%TM\n");
+            $result = Shell::execSudo($findCommand);
+
+            if (!$result['success'] || trim($result['output']) === '') {
+                continue;
+            }
+
+            foreach (explode("\n", trim($result['output'])) as $line) {
+                $parts = explode("\t", $line);
+                if (count($parts) < 4) {
+                    continue;
+                }
+
+                [$absolutePath, $size, $mtimeSort, $mtimeDisplay] = $parts;
+                $sharePath = $share['path'] . '/';
+                if (!str_starts_with($absolutePath, $sharePath)) {
+                    continue;
+                }
+
+                $relativePath = substr($absolutePath, strlen($sharePath));
+                [$user, $originalRelative] = $this->splitRecyclePath($share, $relativePath);
+                $fileName = basename($relativePath);
+
+                if ($filter !== '' && stripos($fileName, $filter) === false && stripos($originalRelative, $filter) === false) {
+                    continue;
+                }
+
+                $items[] = [
+                    'share' => $share['name'],
+                    'user' => $user,
+                    'name' => $fileName,
+                    'size' => (int)$size,
+                    'deleted_at' => $mtimeDisplay,
+                    'sort_time' => (float)$mtimeSort,
+                    'recycle_path' => $relativePath,
+                    'original_path' => $share['name'] . '/' . $originalRelative,
+                ];
+            }
+        }
+
+        usort($items, fn($a, $b) => $b['sort_time'] <=> $a['sort_time']);
+        return $items;
+    }
+
+    private function restoreRecycleItem(array $shares, string $shareName, string $relativePath): void {
+        if (!isset($shares[$shareName])) {
+            throw new \InvalidArgumentException(smb_t('Recycle share not found.', 'Compartilhamento com lixeira não encontrado.'));
+        }
+
+        $this->assertSafeRelativePath($relativePath);
+        $share = $shares[$shareName];
+        $base = $this->recycleBaseRelative($share['repository']);
+        if ($base !== '' && !str_starts_with(trim($relativePath, '/'), $base . '/')) {
+            throw new \InvalidArgumentException(smb_t('Selected item is outside the recycle bin.', 'O item selecionado está fora da lixeira.'));
+        }
+
+        [, $originalRelative] = $this->splitRecyclePath($share, $relativePath);
+        $this->assertSafeRelativePath($originalRelative);
+
+        $source = $share['path'] . '/' . trim($relativePath, '/');
+        $destination = $share['path'] . '/' . trim($originalRelative, '/');
+        $destinationDir = dirname($destination);
+
+        $script = 'if [ ! -e "$1" ]; then exit 10; fi; if [ -e "$2" ]; then exit 11; fi; mkdir -p "$3" && mv "$1" "$2"';
+        $command = '/bin/sh -c ' . escapeshellarg($script) . ' smbcontrol ' . escapeshellarg($source) . ' ' . escapeshellarg($destination) . ' ' . escapeshellarg($destinationDir);
+        $result = Shell::execSudo($command);
+
+        if (!$result['success']) {
+            if ($result['code'] === 10) {
+                throw new \RuntimeException(smb_t('Recycle item no longer exists.', 'O item da lixeira não existe mais.'));
+            }
+            if ($result['code'] === 11) {
+                throw new \RuntimeException(smb_t('The original path already has a file with this name. Move or rename it before restoring.', 'O caminho original já tem um arquivo com este nome. Mova ou renomeie antes de restaurar.'));
+            }
+            throw new \RuntimeException(smb_t('Could not restore recycle item: ', 'Não foi possível restaurar o item da lixeira: ') . $result['output']);
+        }
+    }
+
     private function setSambaPassword(string $username, string $password): void {
         $tmpPass = '/tmp/smbcontrol_smbpass_' . bin2hex(random_bytes(12));
         $userEsc = escapeshellarg($username);
@@ -328,7 +497,7 @@ class SambaController {
                 $vfsObjects = [];
                 if (($_POST['enable_recycle'] ?? '') === '1') {
                     $vfsObjects[] = 'recycle';
-                    $block .= "   recycle:repository = #recycle\n";
+                    $block .= "   recycle:repository = #recycle/%U\n";
                     $block .= "   recycle:keeptree = yes\n";
                     $block .= "   recycle:versions = yes\n";
                     $block .= "   recycle:exclude_dir = tmp, cache\n";
@@ -375,6 +544,31 @@ class SambaController {
         }
 
         require __DIR__ . '/../Views/shares.php';
+    }
+
+    public function recycle() {
+        $filter = trim($_GET['q'] ?? '');
+        $items = [];
+        $recycleShares = [];
+
+        try {
+            $recycleShares = $this->recycleShares();
+
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $shareName = $_POST['share'] ?? '';
+                $relativePath = $_POST['recycle_path'] ?? '';
+                $this->restoreRecycleItem($recycleShares, $shareName, $relativePath);
+                $_SESSION['message'] = smb_t('Item restored to its original location.', 'Item restaurado para o local original.');
+                header('Location: /recycle');
+                exit;
+            }
+
+            $items = $this->listRecycleItems($recycleShares, $filter);
+        } catch (\Exception $e) {
+            $_SESSION['error'] = $e->getMessage();
+        }
+
+        require __DIR__ . '/../Views/recycle.php';
     }
 
     public function users() {
