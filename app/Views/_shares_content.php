@@ -10,7 +10,7 @@
 <?php endif; ?>
 
 <div class="mb-6">
-    <button onclick="openModal('shareWizardModal')" class="px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs flex items-center gap-2">
+    <button id="createShareButton" onclick="openModal('shareWizardModal')" class="px-4 py-2 bg-acc text-bg0 font-medium hover:bg-acc/90 transition-colors rounded-sm uppercase tracking-wider text-xs flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         <?= smb_t('Create Share', 'Criar compartilhamento') ?>
     </button>
@@ -41,7 +41,7 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="text-muted font-sans text-sm"><?= smb_t('Linux path', 'Pasta no Linux') ?></label>
-                        <input type="text" name="path" placeholder="<?= htmlspecialchars(smb_t('e.g. /srv/samba/documents', 'ex.: /srv/samba/documentos')) ?>" required class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+                        <input type="text" name="path" value="/srv/samba/" placeholder="<?= htmlspecialchars(smb_t('e.g. /srv/samba/documents', 'ex.: /srv/samba/documentos')) ?>" required class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
                     </div>
                 </div>
                 
@@ -168,6 +168,47 @@
 </div>
 
 <script>
+const defaultShareBasePath = '/srv/samba/';
+
+function normalizeShareSlug(value) {
+    return value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_.-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+function setupDefaultSharePath() {
+    const modal = document.querySelector('#shareWizardModal');
+    if (!modal) return;
+
+    const nameInput = modal.querySelector('input[name=name]');
+    const pathInput = modal.querySelector('input[name=path]');
+    if (!nameInput || !pathInput) return;
+
+    let pathWasEdited = false;
+    pathInput.addEventListener('input', () => {
+        pathWasEdited = pathInput.value !== defaultShareBasePath;
+    });
+
+    nameInput.addEventListener('input', () => {
+        if (pathWasEdited || nameInput.readOnly) return;
+        const slug = normalizeShareSlug(nameInput.value);
+        pathInput.value = defaultShareBasePath + slug;
+    });
+
+    const createButton = document.getElementById('createShareButton');
+    if (createButton) {
+        createButton.addEventListener('click', () => {
+            const form = modal.querySelector('form');
+            if (form) form.reset();
+            nameInput.readOnly = false;
+            pathWasEdited = false;
+            pathInput.value = defaultShareBasePath;
+        });
+    }
+}
+
 function filterPerms() {
     const filter = document.getElementById('permFilter').value;
     const search = document.getElementById('permSearch').value.toLowerCase();
@@ -195,6 +236,7 @@ function editShare(data) {
     modal.querySelector('input[name=name]').value = data.name;
     modal.querySelector('input[name=name]').readOnly = true;
     modal.querySelector('input[name=path]').value = data.path;
+    modal.querySelector('input[name=path]').dispatchEvent(new Event('input'));
     
     modal.querySelector('input[name=hide_network]').checked = (data.browseable === 'no');
     modal.querySelector('input[name=hide_unreadable]').checked = (data.hide_unreadable === 'yes');
@@ -247,6 +289,8 @@ function editShare(data) {
     switchTab('shareWizardModal', 's-tab-info');
     openModal('shareWizardModal');
 }
+
+document.addEventListener('DOMContentLoaded', setupDefaultSharePath);
 </script>
 
 <!-- Panel 2: Existing Shares -->
