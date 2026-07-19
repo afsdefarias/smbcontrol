@@ -63,6 +63,11 @@ class SambaController {
         $this->runSudo('/usr/bin/systemctl reload smbd', smb_t('Could not reload smbd', 'Não foi possível recarregar o smbd'));
     }
 
+    private function validateAndRestart(): void {
+        $this->runSudo('/usr/bin/testparm -s', smb_t('Invalid Samba configuration', 'Configuração Samba inválida'));
+        $this->runSudo('/usr/bin/systemctl restart smbd', smb_t('Could not restart smbd', 'Não foi possível reiniciar o smbd'));
+    }
+
     private function isValidAccountName(string $name): bool {
         return (bool)preg_match('/^[a-zA-Z0-9_.-]+$/', $name);
     }
@@ -86,27 +91,15 @@ class SambaController {
         $this->runSudo('/usr/bin/touch ' . escapeshellarg(self::SHARES_CONF), smb_t('Could not create shares.conf', 'Não foi possível criar shares.conf'));
 
         $content = $this->readRootFile(self::SMB_CONF);
-        if ($this->sharesIncludeEnabled()) {
+        $includeLine = '   include = /etc/samba/shares.conf';
+        $lines = preg_split("/\r\n|\n|\r/", $content);
+        $withoutInclude = array_values(array_filter($lines, fn($line) => !preg_match('/^\s*include\s*=\s*\/etc\/samba\/shares\.conf\s*$/i', $line)));
+        $newContent = rtrim(implode("\n", $withoutInclude)) . "\n\n" . $includeLine . "\n";
+
+        if ($newContent === rtrim($content) . "\n") {
             return;
         }
 
-        $lines = preg_split("/\r\n|\n|\r/", $content);
-        $newLines = [];
-        $inserted = false;
-        foreach ($lines as $line) {
-            $newLines[] = $line;
-            if (!$inserted && preg_match('/^\s*\[global\]\s*$/i', $line)) {
-                $newLines[] = '   include = /etc/samba/shares.conf';
-                $inserted = true;
-            }
-        }
-        if (!$inserted) {
-            $newLines[] = '';
-            $newLines[] = '[global]';
-            $newLines[] = '   include = /etc/samba/shares.conf';
-        }
-
-        $newContent = rtrim(implode("\n", $newLines)) . "\n";
         $tmp = '/tmp/smbcontrol_smb_' . bin2hex(random_bytes(8));
         file_put_contents($tmp, $newContent);
         $this->runSudo('/usr/bin/testparm -s ' . escapeshellarg($tmp), smb_t('smb.conf with include is invalid', 'smb.conf com include inválido'));
@@ -690,9 +683,9 @@ class SambaController {
                 $shareBlock = SambaParser::parse($block);
                 $parsed[$name] = $shareBlock[$name] ?? [];
                 $this->writeRootFile(self::SHARES_CONF, SambaParser::generate($parsed));
-                $this->validateAndReload();
+                $this->validateAndRestart();
 
-                $_SESSION['message'] = smb_t("Share $name created/updated in shares.conf, folder created at $path, and smbd reloaded.", "Compartilhamento $name criado/atualizado em shares.conf, pasta criada em $path e smbd recarregado.");
+                $_SESSION['message'] = smb_t("Share $name created/updated, permissions applied, and smbd restarted to refresh SMB sessions.", "Compartilhamento $name criado/atualizado, permissões aplicadas e smbd reiniciado para atualizar sessões SMB.");
                 header('Location: /samba/shares');
                 exit;
             } catch (\Exception $e) {
@@ -827,9 +820,11 @@ class SambaController {
 
                     if ($password !== '') {
                         $this->setSambaPassword($username, $password);
-                        $_SESSION['message'] = smb_t("User $username created/updated in Linux and Samba.", "Usuário $username criado/atualizado no Linux e no Samba.");
+                        $this->validateAndRestart();
+                        $_SESSION['message'] = smb_t("User $username created/updated in Linux and Samba, and smbd restarted to refresh access.", "Usuário $username criado/atualizado no Linux e no Samba, e smbd reiniciado para atualizar o acesso.");
                     } else {
-                        $_SESSION['message'] = smb_t("User $username updated in Linux groups. Samba password kept unchanged.", "Usuário $username atualizado nos grupos Linux. Senha Samba mantida.");
+                        $this->validateAndRestart();
+                        $_SESSION['message'] = smb_t("User $username updated in Linux groups. Samba password kept unchanged. smbd was restarted to refresh access.", "Usuário $username atualizado nos grupos Linux. Senha Samba mantida. O smbd foi reiniciado para atualizar o acesso.");
                     }
 
                     header('Location: /samba/users');
@@ -863,8 +858,9 @@ class SambaController {
 	                    }
 	                    $usersStr = escapeshellarg(implode(',', $validUsers));
 	                    $this->runSudo("/usr/bin/gpasswd -M $usersStr $groupEsc", smb_t('Could not update group members', 'Não foi possível atualizar membros do grupo'));
+	                    $this->validateAndRestart();
 
-	                    $_SESSION['message'] = smb_t("Group $groupname created/updated in Linux.", "Grupo $groupname criado/atualizado no Linux.");
+	                    $_SESSION['message'] = smb_t("Group $groupname created/updated and smbd restarted to refresh SMB permissions.", "Grupo $groupname criado/atualizado e smbd reiniciado para atualizar permissões SMB.");
 	                    header('Location: /samba/users');
 	                    exit;
 	                }
@@ -881,7 +877,8 @@ class SambaController {
 	                    }
 
 	                    $this->runSudo('/usr/sbin/groupdel ' . escapeshellarg($groupname), smb_t('Could not delete Linux group', 'Não foi possível excluir o grupo Linux'));
-	                    $_SESSION['message'] = smb_t("Group $groupname deleted from Linux.", "Grupo $groupname excluído do Linux.");
+	                    $this->validateAndRestart();
+	                    $_SESSION['message'] = smb_t("Group $groupname deleted and smbd restarted to refresh SMB permissions.", "Grupo $groupname excluído e smbd reiniciado para atualizar permissões SMB.");
 	                    header('Location: /samba/users');
 	                    exit;
 	                }
@@ -896,13 +893,16 @@ class SambaController {
                     if ($action === 'delete_user') {
                         $this->runSudo("/usr/bin/smbpasswd -x $userEsc", smb_t('Could not remove Samba user', 'Não foi possível remover o usuário do Samba'));
                         $this->runSudo("/usr/sbin/userdel -r $userEsc", smb_t('Could not remove Linux user', 'Não foi possível remover o usuário Linux'));
-                        $_SESSION['message'] = smb_t("User $targetUser removed from Samba and Linux.", "Usuário $targetUser removido do Samba e do Linux.");
+                        $this->validateAndRestart();
+                        $_SESSION['message'] = smb_t("User $targetUser removed from Samba and Linux, and smbd restarted to refresh access.", "Usuário $targetUser removido do Samba e do Linux, e smbd reiniciado para atualizar o acesso.");
                     } elseif ($action === 'enable_user') {
                         $this->runSudo("/usr/bin/smbpasswd -e $userEsc", smb_t('Could not enable Samba user', 'Não foi possível ativar o usuário Samba'));
-                        $_SESSION['message'] = smb_t("User $targetUser enabled in Samba.", "Usuário $targetUser ativado no Samba.");
+                        $this->validateAndRestart();
+                        $_SESSION['message'] = smb_t("User $targetUser enabled in Samba, and smbd restarted to refresh access.", "Usuário $targetUser ativado no Samba, e smbd reiniciado para atualizar o acesso.");
                     } else {
                         $this->runSudo("/usr/bin/smbpasswd -d $userEsc", smb_t('Could not disable Samba user', 'Não foi possível desativar o usuário Samba'));
-                        $_SESSION['message'] = smb_t("User $targetUser disabled in Samba.", "Usuário $targetUser desativado no Samba.");
+                        $this->validateAndRestart();
+                        $_SESSION['message'] = smb_t("User $targetUser disabled in Samba, and smbd restarted to refresh access.", "Usuário $targetUser desativado no Samba, e smbd reiniciado para atualizar o acesso.");
                     }
                     header('Location: /samba/users');
                     exit;
