@@ -580,6 +580,7 @@ class SambaController {
                 $path = trim($_POST['path'] ?? '');
                 $ownerUser = $_POST['owner_user'] ?? 'root';
                 $ownerGroup = $_POST['owner_group'] ?? 'root';
+                $accessMode = $_POST['access_mode'] ?? 'authenticated';
 
                 if (!$this->isValidAccountName($name)) {
                     throw new \InvalidArgumentException(smb_t('Invalid name. Use only letters, numbers, dot, hyphen, and underscore.', 'Nome inválido. Use apenas letras, números, ponto, hífen e sublinhado.'));
@@ -590,9 +591,13 @@ class SambaController {
                 if (!in_array($ownerUser, $systemUsers, true) || !in_array($ownerGroup, $systemGroups, true)) {
                     throw new \InvalidArgumentException(smb_t('Invalid owner user or group.', 'Usuário ou grupo dono inválido.'));
                 }
+                if (!in_array($accessMode, ['authenticated', 'anonymous'], true)) {
+                    throw new \InvalidArgumentException(smb_t('Invalid access mode.', 'Modo de acesso inválido.'));
+                }
 
                 $pathEsc = escapeshellarg($path);
                 $owner = escapeshellarg($ownerUser . ':' . $ownerGroup);
+                $anonymousAccess = $accessMode === 'anonymous';
 
                 $this->runSudo("/usr/bin/mkdir -p $pathEsc", smb_t('Could not create Linux folder', 'Não foi possível criar a pasta Linux'));
                 $this->runSudo("/usr/bin/chown $owner $pathEsc", smb_t('Could not set folder owner', 'Não foi possível ajustar o dono da pasta'));
@@ -631,12 +636,18 @@ class SambaController {
                 $validUsers = array_merge($readList, $writeList);
                 $block = "\n[$name]\n";
                 $block .= "   path = $path\n";
-                $block .= "   guest ok = no\n";
                 $block .= "   force group = $ownerGroup\n";
                 $block .= "   create mask = 0660\n";
                 $block .= "   directory mask = 0770\n";
 
-                if (!empty($validUsers)) {
+                if ($anonymousAccess) {
+                    $block .= "   guest ok = yes\n";
+                    $block .= "   guest only = yes\n";
+                    $block .= "   public = yes\n";
+                    $block .= "   force user = $ownerUser\n";
+                    $block .= "   read only = no\n";
+                } elseif (!empty($validUsers)) {
+                    $block .= "   guest ok = no\n";
                     $block .= "   read only = yes\n";
                     $block .= "   valid users = " . $this->normalizeList($validUsers) . "\n";
                     if (!empty($readList)) {
@@ -646,6 +657,7 @@ class SambaController {
                         $block .= "   write list = " . $this->normalizeList($writeList) . "\n";
                     }
                 } else {
+                    $block .= "   guest ok = no\n";
                     $block .= "   read only = no\n";
                 }
 

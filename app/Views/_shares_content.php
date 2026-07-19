@@ -111,58 +111,80 @@
             </div>
             
             <div id="s-tab-perms" class="tab-pane hidden flex-col gap-4 min-h-[300px]">
-                <div class="flex justify-between items-center mb-1">
-                    <select id="permFilter" onchange="filterPerms()" class="px-3 py-1.5 bg-bg0/50 border border-bg0 rounded-sm text-fg text-sm focus:border-acc outline-none font-sans">
-                        <option value="all"><?= smb_t('All', 'Todos') ?></option>
-                        <option value="users"><?= smb_t('Local users', 'Usuários locais') ?></option>
-                        <option value="groups"><?= smb_t('Local groups', 'Grupos locais') ?></option>
-                    </select>
-                    <div class="relative">
-                        <svg class="w-4 h-4 text-muted absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        <input type="text" id="permSearch" onkeyup="filterPerms()" placeholder="<?= htmlspecialchars(smb_t('Search', 'Buscar')) ?>" class="pl-9 pr-3 py-1.5 bg-bg0/50 border border-bg0 rounded-sm text-fg text-sm focus:border-acc outline-none w-48 font-sans">
+                <div class="border border-bg0 rounded-sm bg-bg0/30 p-3 font-sans">
+                    <div class="text-xs uppercase tracking-wider text-muted mb-2"><?= smb_t('Access mode', 'Modo de acesso') ?></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <label class="flex items-start gap-3 border border-bg0 rounded-sm p-3 cursor-pointer hover:border-acc transition-colors">
+                            <input type="radio" name="access_mode" value="authenticated" checked class="permission-choice mt-0.5" onchange="toggleShareAccessMode()">
+                            <span>
+                                <span class="block text-fg font-medium"><?= smb_t('Login and password', 'Login e senha') ?></span>
+                                <span class="block text-xs text-muted mt-1"><?= smb_t('Only selected users and groups can access this share.', 'Somente usuários e grupos selecionados acessam este compartilhamento.') ?></span>
+                            </span>
+                        </label>
+                        <label class="flex items-start gap-3 border border-bg0 rounded-sm p-3 cursor-pointer hover:border-acc transition-colors">
+                            <input type="radio" name="access_mode" value="anonymous" class="permission-choice mt-0.5" onchange="toggleShareAccessMode()">
+                            <span>
+                                <span class="block text-fg font-medium"><?= smb_t('Anonymous access', 'Acesso anônimo') ?></span>
+                                <span class="block text-xs text-muted mt-1"><?= smb_t('No SMB username or password is required for this share.', 'Não exige usuário nem senha SMB para este compartilhamento.') ?></span>
+                            </span>
+                        </label>
                     </div>
                 </div>
+
+                <div id="authenticatedPermissions" class="flex flex-col gap-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <select id="permFilter" onchange="filterPerms()" class="px-3 py-1.5 bg-bg0/50 border border-bg0 rounded-sm text-fg text-sm focus:border-acc outline-none font-sans">
+                            <option value="all"><?= smb_t('All', 'Todos') ?></option>
+                            <option value="users"><?= smb_t('Local users', 'Usuários locais') ?></option>
+                            <option value="groups"><?= smb_t('Local groups', 'Grupos locais') ?></option>
+                        </select>
+                        <div class="relative">
+                            <svg class="w-4 h-4 text-muted absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <input type="text" id="permSearch" onkeyup="filterPerms()" placeholder="<?= htmlspecialchars(smb_t('Search', 'Buscar')) ?>" class="pl-9 pr-3 py-1.5 bg-bg0/50 border border-bg0 rounded-sm text-fg text-sm focus:border-acc outline-none w-48 font-sans">
+                        </div>
+                    </div>
                 
-                <div class="border border-bg0 rounded-sm overflow-hidden bg-bg0/30 flex-grow max-h-[350px] overflow-y-auto">
-                    <table class="w-full text-left font-mono" id="permsTable">
-                        <thead class="bg-bg0 text-muted sticky top-0 text-xs tracking-wider z-10 font-sans">
-                            <tr>
-                                <th class="px-3 py-2 font-medium border-b border-bg1"><?= smb_t('User/Group', 'Usuário/Grupo') ?></th>
-                                <th class="px-3 py-2 font-medium border-b border-bg1 text-center"><?= smb_t('No access', 'Sem acesso') ?></th>
-                                <th class="px-3 py-2 font-medium border-b border-bg1 text-center text-ok"><?= smb_t('Read/Write', 'Leitura/Escrita') ?></th>
-                                <th class="px-3 py-2 font-medium border-b border-bg1 text-center text-acc2"><?= smb_t('Read only', 'Somente leitura') ?></th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-bg0 text-sm">
-                            <?php if (isset($systemUsers) && !empty($systemUsers)): ?>
-                                <?php foreach ($systemUsers as $u): ?>
-                                    <tr class="hover:bg-bg0/50 transition perm-row" data-type="users" data-name="<?= htmlspecialchars(strtolower($u)) ?>">
-                                        <td class="px-3 py-2 text-fg flex items-center gap-2">
-                                            <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                            <?= htmlspecialchars($u) ?>
-                                        </td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="none" <?= $u === 'root' ? '' : 'checked' ?> class="permission-choice"></td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="write" <?= $u === 'root' ? 'checked' : '' ?> class="permission-choice"></td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="read" class="permission-choice"></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                            
-                            <?php if (isset($systemGroups) && !empty($systemGroups)): ?>
-                                <?php foreach ($systemGroups as $g): ?>
-                                    <tr class="hover:bg-bg0/50 transition bg-bg0/10 perm-row" data-type="groups" data-name="<?= htmlspecialchars(strtolower($g)) ?>">
-                                        <td class="px-3 py-2 text-fg flex items-center gap-2">
-                                            <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                            <?= htmlspecialchars($g) ?>
-                                        </td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="none" <?= $g === 'root' ? '' : 'checked' ?> class="permission-choice"></td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="write" <?= $g === 'root' ? 'checked' : '' ?> class="permission-choice"></td>
-                                        <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="read" class="permission-choice"></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                    <div class="border border-bg0 rounded-sm overflow-hidden bg-bg0/30 flex-grow max-h-[350px] overflow-y-auto">
+                        <table class="w-full text-left font-mono" id="permsTable">
+                            <thead class="bg-bg0 text-muted sticky top-0 text-xs tracking-wider z-10 font-sans">
+                                <tr>
+                                    <th class="px-3 py-2 font-medium border-b border-bg1"><?= smb_t('User/Group', 'Usuário/Grupo') ?></th>
+                                    <th class="px-3 py-2 font-medium border-b border-bg1 text-center"><?= smb_t('No access', 'Sem acesso') ?></th>
+                                    <th class="px-3 py-2 font-medium border-b border-bg1 text-center text-ok"><?= smb_t('Read/Write', 'Leitura/Escrita') ?></th>
+                                    <th class="px-3 py-2 font-medium border-b border-bg1 text-center text-acc2"><?= smb_t('Read only', 'Somente leitura') ?></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-bg0 text-sm">
+                                <?php if (isset($systemUsers) && !empty($systemUsers)): ?>
+                                    <?php foreach ($systemUsers as $u): ?>
+                                        <tr class="hover:bg-bg0/50 transition perm-row" data-type="users" data-name="<?= htmlspecialchars(strtolower($u)) ?>">
+                                            <td class="px-3 py-2 text-fg flex items-center gap-2">
+                                                <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                                <?= htmlspecialchars($u) ?>
+                                            </td>
+                                            <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="none" <?= $u === 'root' ? '' : 'checked' ?> class="permission-choice"></td>
+                                            <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="write" <?= $u === 'root' ? 'checked' : '' ?> class="permission-choice"></td>
+                                            <td class="px-3 py-2 text-center"><input type="radio" name="user_perms[<?= htmlspecialchars($u) ?>]" value="read" class="permission-choice"></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+
+                                <?php if (isset($systemGroups) && !empty($systemGroups)): ?>
+                                    <?php foreach ($systemGroups as $g): ?>
+                                        <tr class="hover:bg-bg0/50 transition bg-bg0/10 perm-row" data-type="groups" data-name="<?= htmlspecialchars(strtolower($g)) ?>">
+                                            <td class="px-3 py-2 text-fg flex items-center gap-2">
+                                                <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                                <?= htmlspecialchars($g) ?>
+                                            </td>
+                                            <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="none" <?= $g === 'root' ? '' : 'checked' ?> class="permission-choice"></td>
+                                            <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="write" <?= $g === 'root' ? 'checked' : '' ?> class="permission-choice"></td>
+                                            <td class="px-3 py-2 text-center"><input type="radio" name="group_perms[<?= htmlspecialchars($g) ?>]" value="read" class="permission-choice"></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
             
@@ -394,6 +416,19 @@ function applyOwnerPermissionDefaults(force = false) {
     if (ownerGroup) setPermission('group', ownerGroup, 'write');
 }
 
+function toggleShareAccessMode() {
+    const modal = document.querySelector('#shareWizardModal');
+    if (!modal) return;
+    const anonymous = modal.querySelector('input[name=access_mode][value=anonymous]')?.checked;
+    const permissionPanel = document.getElementById('authenticatedPermissions');
+    if (!permissionPanel) return;
+    permissionPanel.classList.toggle('opacity-40', anonymous);
+    permissionPanel.classList.toggle('pointer-events-none', anonymous);
+    permissionPanel.querySelectorAll('input, select').forEach(input => {
+        input.disabled = !!anonymous;
+    });
+}
+
 function setupDefaultSharePath() {
     const modal = document.querySelector('#shareWizardModal');
     if (!modal) return;
@@ -429,6 +464,8 @@ function setupDefaultSharePath() {
             const form = modal.querySelector('form');
             if (form) form.reset();
             nameInput.readOnly = false;
+            modal.querySelector('input[name=access_mode][value=authenticated]').checked = true;
+            toggleShareAccessMode();
             sharePermissionsTouched = false;
             applyOwnerPermissionDefaults(true);
             pathWasEdited = false;
@@ -481,6 +518,10 @@ function editShare(data) {
     chkRecycleAdmin.checked = (data.recycle_directory_mode === '0700');
     
     modal.querySelector('input[name=enable_audit]').checked = vfs.includes('full_audit');
+
+    const isAnonymous = data.guest_ok === 'yes' || data.guest_only === 'yes';
+    modal.querySelector(`input[name=access_mode][value=${isAnonymous ? 'anonymous' : 'authenticated'}]`).checked = true;
+    toggleShareAccessMode();
     
     if(data.force_group) {
         const selGroup = modal.querySelector('select[name=owner_group]');
@@ -519,6 +560,7 @@ function editShare(data) {
 }
 
 document.addEventListener('DOMContentLoaded', setupDefaultSharePath);
+document.addEventListener('DOMContentLoaded', toggleShareAccessMode);
 </script>
 
 <!-- Panel 2: Existing Shares -->
@@ -550,9 +592,11 @@ document.addEventListener('DOMContentLoaded', setupDefaultSharePath);
                                 'vfs_objects' => '',
                                 'recycle_directory_mode' => '',
                                 'force_group' => '',
-                                'force_user' => '',
-                                'read_list' => '',
-                                'write_list' => '',
+	                                'force_user' => '',
+	                                'guest_ok' => '',
+	                                'guest_only' => '',
+	                                'read_list' => '',
+	                                'write_list' => '',
                                 'read_only' => ''
                             ];
                             
@@ -565,17 +609,21 @@ document.addEventListener('DOMContentLoaded', setupDefaultSharePath);
                                     if ($k === 'hide unreadable') $shareData['hide_unreadable'] = $v;
                                     if ($k === 'vfs objects') $shareData['vfs_objects'] = $v;
                                     if ($k === 'recycle:directory_mode') $shareData['recycle_directory_mode'] = $v;
-                                    if ($k === 'force group') $shareData['force_group'] = $v;
-                                    if ($k === 'force user') $shareData['force_user'] = $v;
-                                    if ($k === 'read list') $shareData['read_list'] = $v;
+	                                    if ($k === 'force group') $shareData['force_group'] = $v;
+	                                    if ($k === 'force user') $shareData['force_user'] = $v;
+	                                    if ($k === 'guest ok') $shareData['guest_ok'] = $v;
+	                                    if ($k === 'guest only') $shareData['guest_only'] = $v;
+	                                    if ($k === 'read list') $shareData['read_list'] = $v;
                                     if ($k === 'write list') $shareData['write_list'] = $v;
                                     if ($k === 'read only') $shareData['read_only'] = $v;
                                 }
                             }
                             $validUsersDisplay = $shareData['read_list'] . ($shareData['read_list'] && $shareData['write_list'] ? ', ' : '') . $shareData['write_list'];
-                            if (empty($validUsersDisplay) && $shareData['read_only'] === 'no') {
-                                $validUsersDisplay = smb_t('Everyone (Read/Write)', 'Todos (Leitura/Gravação)');
-                            }
+	                            if ($shareData['guest_ok'] === 'yes' || $shareData['guest_only'] === 'yes') {
+	                                $validUsersDisplay = smb_t('Anonymous access', 'Acesso anônimo');
+	                            } elseif (empty($validUsersDisplay) && $shareData['read_only'] === 'no') {
+	                                $validUsersDisplay = smb_t('Everyone authenticated (Read/Write)', 'Todos autenticados (Leitura/Gravação)');
+	                            }
                         ?>
                         <tr class="hover:bg-bg0/20 transition-colors">
                             <td class="py-4 px-2 text-acc font-bold">[<?= htmlspecialchars($sectionName) ?>]</td>
