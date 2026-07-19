@@ -86,7 +86,7 @@
         </div>
 
         <div class="p-5 grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-5 font-mono text-sm overflow-y-auto">
-            <form id="groupForm" action="/samba/users" method="POST" class="bg-bg0/30 border border-bg0 rounded-sm flex flex-col min-h-[420px] max-h-[calc(90vh-120px)] overflow-hidden">
+            <form id="groupForm" action="/samba/users" method="POST" class="bg-bg0/30 border border-bg0 rounded-sm flex flex-col">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                 <input type="hidden" name="action" value="create_group">
 
@@ -102,7 +102,7 @@
                     </div>
                 </div>
 
-                <div class="p-4 flex flex-col gap-4 overflow-y-auto flex-1">
+                <div class="p-4 flex flex-col gap-4">
                     <div class="flex flex-col gap-1">
                         <label class="text-muted"><?= smb_t('Group name', 'Nome do grupo') ?></label>
                         <input type="text" name="groupname" required placeholder="<?= htmlspecialchars(smb_t('e.g. finance', 'ex.: financeiro')) ?>" class="px-3 py-2 text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc2 transition-colors">
@@ -115,7 +115,7 @@
                                 <p class="text-muted text-xs"><?= smb_t('No Samba users found. Create SMB users before adding group members.', 'Nenhum usuário Samba encontrado. Crie usuários SMB antes de adicionar membros ao grupo.') ?></p>
                             </div>
                         <?php else: ?>
-                            <div id="groupMembersSelect" class="multi-select-container relative min-h-[180px]" data-placeholder="<?= htmlspecialchars(smb_t('Search users...', 'Buscar usuários...')) ?>" data-accent="acc2">
+                            <div id="groupMembersSelect" class="multi-select-container relative" data-placeholder="<?= htmlspecialchars(smb_t('Search users...', 'Buscar usuários...')) ?>" data-accent="acc2">
                                 <select multiple name="users[]" class="hidden">
                                     <?php foreach ($smbMemberUsers as $usr): ?>
                                         <option value="<?= htmlspecialchars($usr) ?>"><?= htmlspecialchars($usr) ?></option>
@@ -126,12 +126,6 @@
                     </div>
                 </div>
 
-                <div class="border-t border-bg0 bg-bg0/50 p-4 flex justify-between items-center gap-3">
-                    <span id="groupSaveHint" class="text-xs text-muted italic"><?= smb_t('Select members, then save this group.', 'Selecione os membros e salve este grupo.') ?></span>
-                    <button type="submit" class="px-4 py-2 bg-acc2 text-bg0 font-medium hover:bg-acc2/90 transition-colors rounded-sm uppercase tracking-wider text-xs shrink-0">
-                        <?= smb_t('Save Group', 'Salvar grupo') ?>
-                    </button>
-                </div>
             </form>
 
             <div class="border border-bg0 rounded-sm overflow-hidden bg-bg0/20">
@@ -306,7 +300,7 @@ class MultiSelect {
     
     init() {
         this.wrapper = document.createElement('div');
-        this.wrapper.className = `border border-bg0 rounded-sm bg-bg0/30 flex flex-wrap gap-1 p-2 min-h-[42px] cursor-text relative transition-colors focus-within:border-${this.accent} h-full content-start`;
+        this.wrapper.className = `border border-bg0 rounded-sm bg-bg0/30 flex flex-wrap gap-1 p-2 min-h-[42px] cursor-text relative transition-colors focus-within:border-${this.accent} content-start`;
         
         this.chipContainer = document.createElement('div');
         this.chipContainer.className = 'flex flex-wrap gap-1.5 items-center w-full';
