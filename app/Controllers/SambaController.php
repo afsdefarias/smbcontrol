@@ -410,12 +410,6 @@ class SambaController {
         }
 
         $groupsToShow = array_fill_keys($systemGroups, true);
-        foreach ($systemUsers as $user) {
-            $groups = preg_split('/\s+/', trim(shell_exec('id -Gn ' . escapeshellarg($user)) ?: ''), -1, PREG_SPLIT_NO_EMPTY);
-            foreach ($groups as $group) {
-                $groupsToShow[$group] = true;
-            }
-        }
 
         $records = [];
         $groupFile = @file('/etc/group') ?: [];
@@ -921,6 +915,7 @@ class SambaController {
         }
 
         $sambaUsers = [];
+        $smbMemberUsers = [];
         $activityStats = $this->getSmbUserActivityStats();
         $pdbOutput = shell_exec('sudo -n /usr/bin/pdbedit -L -w 2>&1');
 
@@ -938,6 +933,7 @@ class SambaController {
 	                        $username = $parts[0];
 	                        if (in_array($username, $systemUsers, true)) {
 	                            $stats = $activityStats[$username] ?? ['activities' => 0, 'last_seen' => ''];
+	                            $smbMemberUsers[] = $username;
 	                            $sambaUsers[] = [
 	                                'username' => $username,
 	                                'disabled' => strpos($parts[4], 'D') !== false,
@@ -950,6 +946,8 @@ class SambaController {
                 }
             }
         }
+
+        sort($smbMemberUsers);
 
         $groupRecords = $this->getGroupRecords($systemUsers, $systemGroups);
         $groupShareAccess = $this->getGroupShareAccess(array_keys($groupRecords));

@@ -104,14 +104,14 @@
 
                 <div class="flex flex-col gap-2 min-h-[230px]">
                     <label class="text-muted"><?= smb_t('Members', 'Membros') ?></label>
-                    <?php if (empty($systemUsers)): ?>
+                    <?php if (empty($smbMemberUsers)): ?>
                         <div class="border border-bg0 rounded-sm p-3 flex-grow">
-                            <p class="text-muted text-xs"><?= smb_t('No local users found (UID >= 1000).', 'Nenhum usuário local encontrado (UID >= 1000).') ?></p>
+                            <p class="text-muted text-xs"><?= smb_t('No Samba users found. Create SMB users before adding group members.', 'Nenhum usuário Samba encontrado. Crie usuários SMB antes de adicionar membros ao grupo.') ?></p>
                         </div>
                     <?php else: ?>
                         <div id="groupMembersSelect" class="multi-select-container relative flex-grow" data-placeholder="<?= htmlspecialchars(smb_t('Search users...', 'Buscar usuários...')) ?>" data-accent="acc2">
                             <select multiple name="users[]" class="hidden">
-                                <?php foreach ($systemUsers as $usr): ?>
+                                <?php foreach ($smbMemberUsers as $usr): ?>
                                     <option value="<?= htmlspecialchars($usr) ?>"><?= htmlspecialchars($usr) ?></option>
                                 <?php endforeach; ?>
                             </select>
@@ -209,38 +209,38 @@
     <?php else: ?>
         <div class="overflow-x-auto">
             <table class="w-full text-left font-mono text-sm">
-	                <thead>
-	                    <tr class="text-muted border-b border-bg0">
-	                        <th class="pb-2 font-normal"><?= smb_t('User', 'Usuário') ?></th>
-	                        <th class="pb-2 font-normal"><?= smb_t('Group', 'Grupo') ?></th>
-	                        <th class="pb-2 font-normal"><?= smb_t('Samba Status', 'Status Samba') ?></th>
-	                        <th class="pb-2 font-normal"><?= smb_t('Activities', 'Atividades') ?></th>
-	                        <th class="pb-2 font-normal"><?= smb_t('Last Online', 'Última vez online') ?></th>
-	                        <th class="pb-2 font-normal text-right"><?= smb_t('Actions', 'Ações') ?></th>
-	                    </tr>
-	                </thead>
+                <thead>
+                    <tr class="text-muted border-b border-bg0">
+                        <th class="pb-2 font-normal"><?= smb_t('User', 'Usuário') ?></th>
+                        <th class="pb-2 font-normal"><?= smb_t('Group', 'Grupo') ?></th>
+                        <th class="pb-2 font-normal"><?= smb_t('Samba Status', 'Status Samba') ?></th>
+                        <th class="pb-2 font-normal"><?= smb_t('Activities', 'Atividades') ?></th>
+                        <th class="pb-2 font-normal"><?= smb_t('Last Online', 'Última vez online') ?></th>
+                        <th class="pb-2 font-normal text-right"><?= smb_t('Actions', 'Ações') ?></th>
+                    </tr>
+                </thead>
                 <tbody class="divide-y divide-bg0/50">
                     <?php foreach ($sambaUsers as $user): ?>
-	                        <tr class="hover:bg-bg0/20 transition-colors">
-	                            <td class="py-3 text-fg"><?= htmlspecialchars($user['username']) ?></td>
-	                            <td class="py-3 text-fg opacity-70 text-xs"><?= htmlspecialchars($user['groups'] ?? '-') ?></td>
-	                            <td class="py-3">
-	                                <?php if ($user['disabled']): ?>
-	                                    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-err/10 text-err border border-err/20"><?= smb_t('Disabled', 'Desativado') ?></span>
-	                                <?php else: ?>
-	                                    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-acc/10 text-acc border border-acc/20"><?= smb_t('Active', 'Ativo') ?></span>
-	                                <?php endif; ?>
-	                            </td>
-	                            <td class="py-3 text-fg">
-	                                <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-bg0/60 border border-bg0">
-	                                    <?= (int)($user['activities'] ?? 0) ?>
-	                                </span>
-	                            </td>
-	                            <td class="py-3 text-muted text-xs">
-	                                <?= !empty($user['last_seen']) ? htmlspecialchars($user['last_seen']) : smb_t('Never', 'Nunca') ?>
-	                            </td>
-	                            <td class="py-3 text-right space-x-2">
-                                <button type="button" 
+                        <tr class="hover:bg-bg0/20 transition-colors">
+                            <td class="py-3 text-fg"><?= htmlspecialchars($user['username']) ?></td>
+                            <td class="py-3 text-fg opacity-70 text-xs"><?= htmlspecialchars($user['groups'] ?? '-') ?></td>
+                            <td class="py-3">
+                                <?php if ($user['disabled']): ?>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-err/10 text-err border border-err/20"><?= smb_t('Disabled', 'Desativado') ?></span>
+                                <?php else: ?>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-acc/10 text-acc border border-acc/20"><?= smb_t('Active', 'Ativo') ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="py-3 text-fg">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-bg0/60 border border-bg0">
+                                    <?= (int)($user['activities'] ?? 0) ?>
+                                </span>
+                            </td>
+                            <td class="py-3 text-muted text-xs">
+                                <?= !empty($user['last_seen']) ? htmlspecialchars($user['last_seen']) : smb_t('Never', 'Nunca') ?>
+                            </td>
+                            <td class="py-3 text-right space-x-2">
+                                <button type="button"
                                         class="px-2 py-1 bg-acc/10 text-acc border border-acc/20 hover:bg-acc hover:text-bg0 transition-colors rounded-sm text-xs mr-2"
                                         onclick="
                                             document.querySelector('#userWizardModal input[name=username]').value = '<?= htmlspecialchars(addslashes($user['username'])) ?>';
@@ -248,7 +248,7 @@
                                             document.querySelector('#userWizardModal input[name=password]').placeholder = 'Leave blank to keep unchanged';
                                             openModal('userWizardModal');
                                         "><?= smb_t('Edit', 'Editar') ?></button>
-                                
+
                                 <?php if ($user['disabled']): ?>
                                     <form action="/samba/users" method="POST" class="inline-block">
                                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
@@ -264,7 +264,7 @@
                                         <button type="submit" class="px-2 py-1 bg-bg0 text-fg border border-bg0 hover:border-err hover:text-err transition-colors rounded-sm text-xs"><?= smb_t('Disable', 'Desativar') ?></button>
                                     </form>
                                 <?php endif; ?>
-                                
+
                                 <form action="/samba/users" method="POST" class="inline-block" onsubmit="return confirm('<?= htmlspecialchars(smb_t('WARNING: This will permanently delete the user from Samba and the Linux system. Are you sure?', 'AVISO: isso apagará permanentemente o usuário do Samba e do Linux. Tem certeza?')) ?>');">
                                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                                     <input type="hidden" name="action" value="delete_user">
@@ -321,6 +321,14 @@ class MultiSelect {
         
         this.input.addEventListener('input', () => this.filterOptions());
         this.input.addEventListener('focus', () => this.showDropdown());
+        this.input.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            const firstVisible = Array.from(this.dropdown.querySelectorAll('[data-value]')).find(item => item.style.display !== 'none');
+            if (firstVisible) {
+                e.preventDefault();
+                this.selectOption(firstVisible.dataset.value);
+            }
+        });
         
         document.addEventListener('click', (e) => {
             if (!this.container.contains(e.target)) {
@@ -406,12 +414,16 @@ class MultiSelect {
 
     setSelected(values) {
         this.selectedValues = new Set(values);
-        Array.from(this.select.options).forEach(opt => {
-            opt.selected = this.selectedValues.has(opt.value);
-        });
+        this.syncSelect();
         this.input.value = '';
         this.renderChips();
         this.renderDropdown();
+    }
+
+    syncSelect() {
+        Array.from(this.select.options).forEach(opt => {
+            opt.selected = this.selectedValues.has(opt.value);
+        });
     }
     
     renderChips() {
@@ -455,6 +467,10 @@ function openGroupManager() {
     resetGroupForm();
     openModal('groupWizardModal');
 }
+
+document.getElementById('groupForm')?.addEventListener('submit', () => {
+    document.getElementById('groupMembersSelect')?.multiSelect?.syncSelect();
+});
 
 function resetGroupForm() {
     const form = document.getElementById('groupForm');
