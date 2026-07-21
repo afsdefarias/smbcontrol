@@ -239,17 +239,41 @@ class SambaController {
 
     private function listRecycleItems(array $shares, string $filter): array {
         $items = [];
+        $audit = Shell::execSudo('/usr/bin/cat /var/log/syslog');
+        $folderDeletes = [];
+
+        if ($audit['success']) {
+            foreach (explode("\n", $audit['output']) as $line) {
+                if (!str_contains($line, 'smbd_audit:')) {
+                    continue;
+                }
+
+                [$prefix, $auditPart] = explode('smbd_audit:', $line, 2);
+                $fields = explode('|', trim($auditPart));
+                if (strtolower($fields[3] ?? '') !== 'unlinkat') {
+                    continue;
+                }
+
+                $folderDeletes[] = [
+                    'timestamp' => strtok(trim($prefix), ' ') ?: '',
+                    'user' => $fields[0] ?? '',
+                    'share' => $fields[2] ?? '',
+                    'path' => $fields[5] ?? '',
+                ];
+            }
+        }
 
         foreach ($shares as $share) {
             $base = $this->recycleBaseRelative($share['repository']);
             $recycleRoot = $share['path'] . '/' . $base;
-            $findCommand = '/usr/bin/find ' . escapeshellarg($recycleRoot) . ' -mindepth 1 \( -type f -o -type d -empty \) -printf ' . escapeshellarg("%y\t%p\t%s\t%T@\t%TY-%Tm-%Td %TH:%TM\n");
+            $findCommand = '/usr/bin/find ' . escapeshellarg($recycleRoot) . ' -mindepth 1 \( -type f -o -type d \) -printf ' . escapeshellarg("%y\t%p\t%s\t%T@\t%TY-%Tm-%Td %TH:%TM\n");
             $result = Shell::execSudo($findCommand);
 
             if (!$result['success'] || trim($result['output']) === '') {
                 continue;
             }
 
+            $entries = [];
             foreach (explode("\n", trim($result['output'])) as $line) {
                 $parts = explode("\t", $line);
                 if (count($parts) < 5) {
@@ -257,6 +281,69 @@ class SambaController {
                 }
 
                 [$type, $absolutePath, $size, $mtimeSort, $mtimeDisplay] = $parts;
+                $entries[$absolutePath] = [
+                    'type' => $type === 'd' ? 'directory' : 'file',
+                    'size' => (int)$size,
+                    'sort_time' => (float)$mtimeSort,
+                    'deleted_at' => $mtimeDisplay,
+                ];
+            }
+
+            $groupedFolders = [];
+            foreach ($folderDeletes as $delete) {
+                if ($delete['share'] !== $share['name'] || $delete['user'] === '' || $delete['user'] === '?') {
+                    continue;
+                }
+
+                $sharePath = rtrim($share['path'], '/');
+                if (!str_starts_with($delete['path'], $sharePath . '/') || $delete['path'] === $sharePath) {
+                    continue;
+                }
+
+                $originalRelative = ltrim(substr($delete['path'], strlen($sharePath)), '/');
+                $recycleRelative = trim($base . '/' . $delete['user'] . '/' . $originalRelative, '/');
+                $recycleAbsolute = $sharePath . '/' . $recycleRelative;
+                if (($entries[$recycleAbsolute]['type'] ?? '') !== 'directory') {
+                    continue;
+                }
+
+                $groupedFolders[] = [
+                    'share' => $share['name'],
+                    'user' => $delete['user'],
+                    'name' => basename($originalRelative),
+                    'type' => 'directory',
+                    'size' => 0,
+                    'deleted_at' => $delete['timestamp'] ?: ($entries[$recycleAbsolute]['deleted_at'] ?? ''),
+                    'sort_time' => $delete['timestamp'] !== '' ? (float)strtotime($delete['timestamp']) : ($entries[$recycleAbsolute]['sort_time'] ?? 0),
+                    'recycle_path' => $recycleRelative,
+                    'original_path' => $share['name'] . '/' . $originalRelative,
+                    '_recycle_absolute' => $recycleAbsolute,
+                ];
+            }
+
+            usort($groupedFolders, fn($a, $b) => strlen($a['_recycle_absolute']) <=> strlen($b['_recycle_absolute']));
+            $visibleFolders = [];
+            foreach ($groupedFolders as $folder) {
+                $nested = false;
+                foreach ($visibleFolders as $parent) {
+                    if (str_starts_with($folder['_recycle_absolute'], $parent['_recycle_absolute'] . '/')) {
+                        $nested = true;
+                        break;
+                    }
+                }
+                if (!$nested) {
+                    $visibleFolders[] = $folder;
+                }
+            }
+
+            foreach ($visibleFolders as $folder) {
+                unset($folder['_recycle_absolute']);
+                if ($filter === '' || stripos($folder['name'], $filter) !== false || stripos($folder['original_path'], $filter) !== false) {
+                    $items[] = $folder;
+                }
+            }
+
+            foreach ($entries as $absolutePath => $entry) {
                 $sharePath = $share['path'] . '/';
                 if (!str_starts_with($absolutePath, $sharePath)) {
                     continue;
@@ -267,8 +354,19 @@ class SambaController {
                 if (preg_match('#%(U|u)#', $share['repository']) && !str_contains(trim(substr($relativePath, strlen($base)), '/'), '/')) {
                     continue;
                 }
-                $fileName = basename($relativePath);
 
+                $hiddenByFolder = false;
+                foreach ($visibleFolders as $folder) {
+                    if ($absolutePath === $folder['_recycle_absolute'] || str_starts_with($absolutePath, $folder['_recycle_absolute'] . '/')) {
+                        $hiddenByFolder = true;
+                        break;
+                    }
+                }
+                if ($hiddenByFolder) {
+                    continue;
+                }
+
+                $fileName = basename($relativePath);
                 if ($filter !== '' && stripos($fileName, $filter) === false && stripos($originalRelative, $filter) === false) {
                     continue;
                 }
@@ -277,10 +375,10 @@ class SambaController {
                     'share' => $share['name'],
                     'user' => $user,
                     'name' => $fileName,
-                    'type' => $type === 'd' ? 'directory' : 'file',
-                    'size' => (int)$size,
-                    'deleted_at' => $mtimeDisplay,
-                    'sort_time' => (float)$mtimeSort,
+                    'type' => $entry['type'],
+                    'size' => $entry['size'],
+                    'deleted_at' => $entry['deleted_at'],
+                    'sort_time' => $entry['sort_time'],
                     'recycle_path' => $relativePath,
                     'original_path' => $share['name'] . '/' . $originalRelative,
                 ];
