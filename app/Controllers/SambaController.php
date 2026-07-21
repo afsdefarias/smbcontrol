@@ -243,7 +243,7 @@ class SambaController {
         foreach ($shares as $share) {
             $base = $this->recycleBaseRelative($share['repository']);
             $recycleRoot = $share['path'] . '/' . $base;
-            $findCommand = '/usr/bin/find ' . escapeshellarg($recycleRoot) . ' -type f -printf ' . escapeshellarg("%p\t%s\t%T@\t%TY-%Tm-%Td %TH:%TM\n");
+            $findCommand = '/usr/bin/find ' . escapeshellarg($recycleRoot) . ' -mindepth 1 \( -type f -o -type d -empty \) -printf ' . escapeshellarg("%y\t%p\t%s\t%T@\t%TY-%Tm-%Td %TH:%TM\n");
             $result = Shell::execSudo($findCommand);
 
             if (!$result['success'] || trim($result['output']) === '') {
@@ -252,11 +252,11 @@ class SambaController {
 
             foreach (explode("\n", trim($result['output'])) as $line) {
                 $parts = explode("\t", $line);
-                if (count($parts) < 4) {
+                if (count($parts) < 5) {
                     continue;
                 }
 
-                [$absolutePath, $size, $mtimeSort, $mtimeDisplay] = $parts;
+                [$type, $absolutePath, $size, $mtimeSort, $mtimeDisplay] = $parts;
                 $sharePath = $share['path'] . '/';
                 if (!str_starts_with($absolutePath, $sharePath)) {
                     continue;
@@ -264,6 +264,9 @@ class SambaController {
 
                 $relativePath = substr($absolutePath, strlen($sharePath));
                 [$user, $originalRelative] = $this->splitRecyclePath($share, $relativePath);
+                if (preg_match('#%(U|u)#', $share['repository']) && !str_contains(trim(substr($relativePath, strlen($base)), '/'), '/')) {
+                    continue;
+                }
                 $fileName = basename($relativePath);
 
                 if ($filter !== '' && stripos($fileName, $filter) === false && stripos($originalRelative, $filter) === false) {
@@ -274,6 +277,7 @@ class SambaController {
                     'share' => $share['name'],
                     'user' => $user,
                     'name' => $fileName,
+                    'type' => $type === 'd' ? 'directory' : 'file',
                     'size' => (int)$size,
                     'deleted_at' => $mtimeDisplay,
                     'sort_time' => (float)$mtimeSort,

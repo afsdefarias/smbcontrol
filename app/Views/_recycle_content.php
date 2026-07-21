@@ -51,6 +51,7 @@
                     <tr>
                         <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Name', 'Nome') ?></th>
                         <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Share', 'Compartilhamento') ?></th>
+                        <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Type', 'Tipo') ?></th>
                         <th class="px-4 py-3 font-medium uppercase"><?= smb_t('User', 'Usuário') ?></th>
                         <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Original location', 'Localização original') ?></th>
                         <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Deleted at', 'Excluído em') ?></th>
@@ -61,7 +62,7 @@
                 <tbody class="divide-y divide-bg0">
                     <?php if (empty($items)): ?>
                         <tr>
-                            <td colspan="7" class="px-4 py-8 text-center text-muted italic">
+                            <td colspan="8" class="px-4 py-8 text-center text-muted italic">
                                 <?= smb_t('No deleted items match the current filter.', 'Nenhum item excluído corresponde ao filtro atual.') ?>
                             </td>
                         </tr>
@@ -70,10 +71,11 @@
                             <tr class="hover:bg-bg0/50 transition-colors">
                                 <td class="px-4 py-2.5 text-fg font-bold max-w-[220px] truncate" title="<?= htmlspecialchars($item['name']) ?>"><?= htmlspecialchars($item['name']) ?></td>
                                 <td class="px-4 py-2.5 text-acc"><?= htmlspecialchars($item['share']) ?></td>
+                                <td class="px-4 py-2.5 text-muted"><?= $item['type'] === 'directory' ? smb_t('Folder', 'Pasta') : smb_t('File', 'Arquivo') ?></td>
                                 <td class="px-4 py-2.5 text-fg"><?= htmlspecialchars($item['user']) ?></td>
                                 <td class="px-4 py-2.5 text-muted max-w-md truncate" title="<?= htmlspecialchars($item['original_path']) ?>"><?= htmlspecialchars($item['original_path']) ?></td>
                                 <td class="px-4 py-2.5 text-muted"><?= htmlspecialchars($item['deleted_at']) ?></td>
-                                <td class="px-4 py-2.5 text-muted text-right"><?= htmlspecialchars($formatBytes((int)$item['size'])) ?></td>
+                                <td class="px-4 py-2.5 text-muted text-right"><?= $item['type'] === 'directory' ? '-' : htmlspecialchars($formatBytes((int)$item['size'])) ?></td>
                                 <td class="px-4 py-2.5 text-right">
                                     <form action="/recycle" method="POST" class="inline-block" onsubmit="return confirm('<?= htmlspecialchars(smb_t('Restore this item to its original location?', 'Restaurar este item para o local original?')) ?>');">
                                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
