@@ -94,6 +94,7 @@ class DashboardController {
 
     public function reports() {
         $logs = [];
+        $page = max(1, (int)($_GET['page'] ?? 1));
         $filters = [
             'q' => $_GET['q'] ?? '',
             'user' => $_GET['user'] ?? '',
@@ -114,11 +115,20 @@ class DashboardController {
                         $logs[] = $parsed;
                     }
                 }
-                $logs = array_slice(array_reverse($logs), 0, 500);
+                $logs = array_reverse($logs);
             }
         } catch (\Exception $e) {
             $_SESSION['error'] = smb_t('Error while reading logs: ', 'Erro ao buscar logs: ') . $e->getMessage();
         }
+
+        $totalLogs = count($logs);
+        $logs = array_slice($logs, ($page - 1) * 200, 200);
+        $pagination = [
+            'page' => $page,
+            'per_page' => 200,
+            'total' => $totalLogs,
+            'pages' => max(1, (int)ceil($totalLogs / 200)),
+        ];
 
         require __DIR__ . '/../Views/reports.php';
     }

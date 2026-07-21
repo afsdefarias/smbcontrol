@@ -193,8 +193,14 @@
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
-                </table>
+        </table>
             </div>
+            <?php
+                $pagination = $groupPagination ?? ['page' => 1, 'per_page' => 200, 'total' => count($groupRecords ?? []), 'pages' => 1];
+                $paginationPath = '/samba/users';
+                $paginationBase = [];
+                require __DIR__ . '/_pagination.php';
+            ?>
         </div>
     </div>
 </div>
@@ -281,6 +287,12 @@
                 </tbody>
             </table>
         </div>
+        <?php
+            $pagination = $userPagination ?? ['page' => 1, 'per_page' => 200, 'total' => count($sambaUsers ?? []), 'pages' => 1];
+            $paginationPath = '/samba/users';
+            $paginationBase = [];
+            require __DIR__ . '/_pagination.php';
+        ?>
     <?php endif; ?>
 </div>
 

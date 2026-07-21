@@ -111,6 +111,22 @@ class SambaController {
         return implode(' ', array_values(array_unique($items)));
     }
 
+    private function paginateList(array $items, string $path, array $query = []): array {
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $total = count($items);
+        return [
+            'items' => array_slice($items, ($page - 1) * 200, 200, true),
+            'pagination' => [
+                'page' => $page,
+                'per_page' => 200,
+                'total' => $total,
+                'pages' => max(1, (int)ceil($total / 200)),
+            ],
+            'paginationPath' => $path,
+            'paginationBase' => $query,
+        ];
+    }
+
     private function sendJson(array $payload, int $status = 200): void {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
@@ -186,6 +202,7 @@ class SambaController {
                 'path' => rtrim($path, '/'),
                 'repository' => trim($repository),
                 'keeptree' => strtolower($indexed['recycle:keeptree'] ?? 'no') === 'yes',
+                'owner' => trim($indexed['force user'] ?? ''),
             ];
         }
 
@@ -237,7 +254,42 @@ class SambaController {
         }
     }
 
-    private function listRecycleItems(array $shares, string $filter): array {
+    private function recycleItemMatches(array $item, array $filters): bool {
+        $query = trim($filters['q'] ?? '');
+        if ($query !== '') {
+            $haystack = implode(' ', [
+                $item['name'] ?? '',
+                $item['original_path'] ?? '',
+                $item['share'] ?? '',
+                $item['owner'] ?? '',
+                $item['user'] ?? '',
+            ]);
+            if (stripos($haystack, $query) === false) {
+                return false;
+            }
+        }
+
+        foreach (['owner' => 'owner', 'deleted_by' => 'user'] as $filterKey => $itemKey) {
+            $value = trim($filters[$filterKey] ?? '');
+            if ($value !== '' && stripos((string)($item[$itemKey] ?? ''), $value) === false) {
+                return false;
+            }
+        }
+
+        $timestamp = (int)($item['deleted_timestamp'] ?? 0);
+        $from = trim($filters['date_from'] ?? '');
+        $to = trim($filters['date_to'] ?? '');
+        if ($timestamp > 0 && $from !== '' && $timestamp < strtotime($from . ' 00:00:00')) {
+            return false;
+        }
+        if ($timestamp > 0 && $to !== '' && $timestamp > strtotime($to . ' 23:59:59')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function listRecycleItems(array $shares, array $filters, bool $showFiles = false): array {
         $items = [];
         $audit = Shell::execSudo('/usr/bin/cat /var/log/syslog');
         $folderDeletes = [];
@@ -291,6 +343,9 @@ class SambaController {
 
             $groupedFolders = [];
             foreach ($folderDeletes as $delete) {
+                if ($showFiles) {
+                    continue;
+                }
                 if ($delete['share'] !== $share['name'] || $delete['user'] === '' || $delete['user'] === '?') {
                     continue;
                 }
@@ -307,20 +362,23 @@ class SambaController {
                     continue;
                 }
 
-                $groupedFolders[] = [
+                $groupedFolders[$recycleAbsolute] = [
                     'share' => $share['name'],
+                    'owner' => $share['owner'],
                     'user' => $delete['user'],
                     'name' => basename($originalRelative),
                     'type' => 'directory',
                     'size' => 0,
                     'deleted_at' => $delete['timestamp'] ?: ($entries[$recycleAbsolute]['deleted_at'] ?? ''),
                     'sort_time' => $delete['timestamp'] !== '' ? (float)strtotime($delete['timestamp']) : ($entries[$recycleAbsolute]['sort_time'] ?? 0),
+                    'deleted_timestamp' => $delete['timestamp'] !== '' ? (int)strtotime($delete['timestamp']) : (int)($entries[$recycleAbsolute]['sort_time'] ?? 0),
                     'recycle_path' => $recycleRelative,
                     'original_path' => $share['name'] . '/' . $originalRelative,
                     '_recycle_absolute' => $recycleAbsolute,
                 ];
             }
 
+            $groupedFolders = array_values($groupedFolders);
             usort($groupedFolders, fn($a, $b) => strlen($a['_recycle_absolute']) <=> strlen($b['_recycle_absolute']));
             $visibleFolders = [];
             foreach ($groupedFolders as $folder) {
@@ -338,9 +396,7 @@ class SambaController {
 
             foreach ($visibleFolders as $folder) {
                 unset($folder['_recycle_absolute']);
-                if ($filter === '' || stripos($folder['name'], $filter) !== false || stripos($folder['original_path'], $filter) !== false) {
-                    $items[] = $folder;
-                }
+                $items[] = $folder;
             }
 
             foreach ($entries as $absolutePath => $entry) {
@@ -366,19 +422,22 @@ class SambaController {
                     continue;
                 }
 
-                $fileName = basename($relativePath);
-                if ($filter !== '' && stripos($fileName, $filter) === false && stripos($originalRelative, $filter) === false) {
+                if ($showFiles && $entry['type'] !== 'file') {
                     continue;
                 }
 
+                $fileName = basename($relativePath);
+
                 $items[] = [
                     'share' => $share['name'],
+                    'owner' => $share['owner'],
                     'user' => $user,
                     'name' => $fileName,
                     'type' => $entry['type'],
                     'size' => $entry['size'],
                     'deleted_at' => $entry['deleted_at'],
                     'sort_time' => $entry['sort_time'],
+                    'deleted_timestamp' => (int)$entry['sort_time'],
                     'recycle_path' => $relativePath,
                     'original_path' => $share['name'] . '/' . $originalRelative,
                 ];
@@ -386,7 +445,7 @@ class SambaController {
         }
 
         usort($items, fn($a, $b) => $b['sort_time'] <=> $a['sort_time']);
-        return $items;
+        return array_values(array_filter($items, fn($item) => $this->recycleItemMatches($item, $filters)));
     }
 
     private function restoreRecycleItem(array $shares, string $shareName, string $relativePath): void {
@@ -830,11 +889,23 @@ class SambaController {
             $_SESSION['error'] = $e->getMessage();
         }
 
+        $sharePage = $this->paginateList($existingShares, '/samba/shares');
+        $existingShares = $sharePage['items'];
+        $sharePagination = $sharePage['pagination'];
+
         require __DIR__ . '/../Views/shares.php';
     }
 
     public function recycle() {
-        $filter = trim($_GET['q'] ?? '');
+        $filters = [
+            'q' => trim($_GET['q'] ?? ''),
+            'owner' => trim($_GET['owner'] ?? ''),
+            'deleted_by' => trim($_GET['deleted_by'] ?? ''),
+            'date_from' => trim($_GET['date_from'] ?? ''),
+            'date_to' => trim($_GET['date_to'] ?? ''),
+        ];
+        $showFiles = ($_GET['files'] ?? '') === '1';
+        $page = max(1, (int)($_GET['page'] ?? 1));
         $items = [];
         $recycleShares = [];
 
@@ -850,7 +921,15 @@ class SambaController {
                 exit;
             }
 
-            $items = $this->listRecycleItems($recycleShares, $filter);
+            $allItems = $this->listRecycleItems($recycleShares, $filters, $showFiles);
+            $totalItems = count($allItems);
+            $items = array_slice($allItems, ($page - 1) * 200, 200);
+            $pagination = [
+                'page' => $page,
+                'per_page' => 200,
+                'total' => $totalItems,
+                'pages' => max(1, (int)ceil($totalItems / 200)),
+            ];
         } catch (\Exception $e) {
             $_SESSION['error'] = $e->getMessage();
         }
@@ -1076,6 +1155,13 @@ class SambaController {
 
         $groupRecords = $this->getGroupRecords($systemUsers, $systemGroups);
         $groupShareAccess = $this->getGroupShareAccess(array_keys($groupRecords));
+
+        $userPage = $this->paginateList($sambaUsers ?? [], '/samba/users');
+        $sambaUsers = $sambaUsers === null ? null : $userPage['items'];
+        $userPagination = $userPage['pagination'];
+        $groupPage = $this->paginateList(array_values($groupRecords), '/samba/users');
+        $groupRecords = $groupPage['items'];
+        $groupPagination = $groupPage['pagination'];
 
         require __DIR__ . '/../Views/users.php';
     }

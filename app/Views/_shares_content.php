@@ -647,5 +647,11 @@ document.addEventListener('DOMContentLoaded', toggleShareAccessMode);
                 </tbody>
             </table>
         </div>
+        <?php
+            $pagination = $sharePagination ?? ['page' => 1, 'per_page' => 200, 'total' => count($existingShares), 'pages' => 1];
+            $paginationPath = '/samba/shares';
+            $paginationBase = [];
+            require __DIR__ . '/_pagination.php';
+        ?>
     <?php endif; ?>
 </div>

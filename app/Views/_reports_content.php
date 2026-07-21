@@ -8,6 +8,11 @@
             break;
         }
     }
+    $pagination = $pagination ?? ['page' => 1, 'per_page' => 200, 'total' => count($logs ?? []), 'pages' => 1];
+    $reportQuery = array_filter($filters, fn($value) => trim((string)$value) !== '');
+    $reportPageUrl = function (int $page) use ($reportQuery): string {
+        return '/reports?' . http_build_query(array_merge($reportQuery, ['page' => $page]));
+    };
 ?>
 
 <div class="mb-8 flex flex-col gap-4">
@@ -61,7 +66,7 @@
 
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
             <div class="text-xs text-muted font-mono">
-                <?= count($logs) ?> <?= smb_t('matching audit record(s)', 'registro(s) de auditoria encontrados') ?>
+                <?= (int)$pagination['total'] ?> <?= smb_t('matching audit record(s)', 'registro(s) de auditoria encontrados') ?>
             </div>
             <div class="flex items-center gap-2">
                 <?php if ($hasFilters): ?>
@@ -76,6 +81,16 @@
         </div>
     </form>
 </div>
+
+<?php if (($pagination['pages'] ?? 1) > 1): ?>
+    <div class="mb-4 flex items-center justify-between text-xs font-mono text-muted">
+        <span><?= smb_t('Page', 'Página') ?> <?= (int)$pagination['page'] ?> / <?= (int)$pagination['pages'] ?> · <?= smb_t('Maximum 200 results per page', 'Máximo de 200 resultados por página') ?></span>
+        <div class="flex items-center gap-2">
+            <?php if ($pagination['page'] > 1): ?><a href="<?= htmlspecialchars($reportPageUrl($pagination['page'] - 1)) ?>" class="px-3 py-1.5 border border-bg0 hover:bg-bg0 text-fg rounded-sm"><?= smb_t('Previous', 'Anterior') ?></a><?php endif; ?>
+            <?php if ($pagination['page'] < $pagination['pages']): ?><a href="<?= htmlspecialchars($reportPageUrl($pagination['page'] + 1)) ?>" class="px-3 py-1.5 border border-bg0 hover:bg-bg0 text-fg rounded-sm"><?= smb_t('Next', 'Próxima') ?></a><?php endif; ?>
+        </div>
+    </div>
+<?php endif; ?>
 
 <div class="bg-bg1 rounded-sm border border-bg0 p-1">
     <div class="overflow-x-auto">

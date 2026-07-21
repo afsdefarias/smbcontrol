@@ -108,4 +108,5 @@
             </tbody>
         </table>
     </div>
+    <?php require __DIR__ . '/_pagination.php'; ?>
 </div>

@@ -98,6 +98,18 @@ class ProfileController {
         } catch (\Exception $e) {
             $allAdmins = [];
         }
+
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $totalAdmins = count($allAdmins);
+        $pagination = [
+            'page' => $page,
+            'per_page' => 200,
+            'total' => $totalAdmins,
+            'pages' => max(1, (int)ceil($totalAdmins / 200)),
+        ];
+        $allAdmins = array_slice($allAdmins, ($page - 1) * 200, 200);
+        $paginationPath = '/profile';
+        $paginationBase = [];
         
         require __DIR__ . '/../Views/profile.php';
     }

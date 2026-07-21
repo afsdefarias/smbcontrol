@@ -33,6 +33,17 @@ class DiskController {
 
         // Recupera a lista de discos para a View
         $disks = DiskManager::listDisks();
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $totalDisks = count($disks);
+        $pagination = [
+            'page' => $page,
+            'per_page' => 200,
+            'total' => $totalDisks,
+            'pages' => max(1, (int)ceil($totalDisks / 200)),
+        ];
+        $disks = array_slice($disks, ($page - 1) * 200, 200);
+        $paginationPath = '/disks';
+        $paginationBase = [];
         
         $contentView = __DIR__ . '/../Views/_disks_content.php';
         require __DIR__ . '/../Views/layout.php';
