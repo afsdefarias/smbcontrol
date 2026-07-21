@@ -602,12 +602,20 @@ class SambaController {
                 $pathEsc = escapeshellarg($path);
                 $owner = escapeshellarg($ownerUser . ':' . $ownerGroup);
                 $anonymousAccess = $accessMode === 'anonymous';
+                $recycleEnabled = ($_POST['enable_recycle'] ?? '') === '1';
 
                 $this->runSudo("/usr/bin/mkdir -p $pathEsc", smb_t('Could not create Linux folder', 'Não foi possível criar a pasta Linux'));
                 $this->runSudo("/usr/bin/chown $owner $pathEsc", smb_t('Could not set folder owner', 'Não foi possível ajustar o dono da pasta'));
                 $this->runSudo("/usr/bin/chmod 0770 $pathEsc", smb_t('Could not set folder mode', 'Não foi possível ajustar o modo da pasta'));
                 $this->runSudo("/usr/bin/setfacl -b $pathEsc", smb_t('Could not clear old ACLs', 'Não foi possível limpar ACLs antigas'));
                 $this->runSudo('/usr/bin/setfacl -m ' . escapeshellarg("u:$ownerUser:rwx") . ' -m ' . escapeshellarg("g:$ownerGroup:rwx") . ' ' . $pathEsc, smb_t('Could not apply owner ACL', 'Não foi possível aplicar ACL do dono'));
+                if ($recycleEnabled) {
+                    // The shared recycle root must be writable so Samba can create one private bin per user.
+                    $recycleRootEsc = escapeshellarg(rtrim($path, '/') . '/#recycle');
+                    $this->runSudo("/usr/bin/mkdir -p $recycleRootEsc", smb_t('Could not create recycle bin', 'Não foi possível criar a lixeira'));
+                    $this->runSudo('/usr/bin/chown root:' . escapeshellarg($ownerGroup) . " $recycleRootEsc", smb_t('Could not set recycle bin owner', 'Não foi possível ajustar o dono da lixeira'));
+                    $this->runSudo("/usr/bin/chmod 0770 $recycleRootEsc", smb_t('Could not set recycle bin permissions', 'Não foi possível ajustar as permissões da lixeira'));
+                }
 
                 $readList = [];
                 $writeList = [];
@@ -679,8 +687,11 @@ class SambaController {
                     $block .= "   recycle:keeptree = yes\n";
                     $block .= "   recycle:versions = yes\n";
                     $block .= "   recycle:exclude_dir = tmp, cache\n";
+                    $block .= "   recycle:directory_mode = 0770\n";
                     if (($_POST['recycle_admin'] ?? '') === '1') {
-                        $block .= "   recycle:directory_mode = 0700\n";
+                        $block .= "   recycle:subdir_mode = 0700\n";
+                    } else {
+                        $block .= "   recycle:subdir_mode = 0770\n";
                     }
                 }
                 if (($_POST['enable_audit'] ?? '') === 'yes') {
