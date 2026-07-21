@@ -17,6 +17,8 @@ require_once __DIR__ . '/../app/Controllers/DiskController.php';
 require_once __DIR__ . '/../app/Services/DiskManager.php';
 
 // Configurações restritas de Sessão
+// Use an application-specific cookie so other web systems on this host cannot overwrite our CSRF session.
+session_name('SMBCONTROLSESSID');
 session_set_cookie_params([
     'lifetime' => 0, // Até fechar o navegador
     'path' => '/',
