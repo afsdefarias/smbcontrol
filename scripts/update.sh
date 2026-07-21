@@ -42,6 +42,7 @@ done
 find "$APP_DIR" -type d -exec chmod 0755 {} +
 find "$APP_DIR" -type f -exec chmod 0644 {} +
 [ ! -e "$APP_DIR/config/database.php" ] || chmod 0640 "$APP_DIR/config/database.php"
+chmod 0755 "$APP_DIR/scripts/install.sh" "$APP_DIR/scripts/update.sh"
 chown -R "$WEB_USER:$WEB_GROUP" "$APP_DIR"
 find "$APP_DIR/app" -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
 install -m 0755 "$APP_DIR/scripts/update.sh" /usr/local/bin/update-smbcontrol

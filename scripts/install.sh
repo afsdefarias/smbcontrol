@@ -140,6 +140,7 @@ configure_database_permissions() {
     find "$APP_DIR" -type d -exec chmod 0755 {} +
     find "$APP_DIR" -type f -exec chmod 0644 {} +
     chmod 0640 "$APP_DIR/config/database.php"
+    chmod 0755 "$APP_DIR/scripts/install.sh" "$APP_DIR/scripts/update.sh"
 }
 
 configure_apache() {
