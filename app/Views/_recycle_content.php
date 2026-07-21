@@ -34,7 +34,7 @@
         <?php if ($showFiles): ?><input type="hidden" name="files" value="1"><?php endif; ?>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
             <div class="md:col-span-2 flex flex-col gap-1">
-                <label class="text-xs text-muted uppercase tracking-wider"><?= smb_t('Name, path, or content', 'Nome, caminho ou conteúdo') ?></label>
+                <label class="text-xs text-muted uppercase tracking-wider"><?= smb_t('Name or path', 'Nome ou caminho') ?></label>
                 <div class="relative">
                     <svg class="w-4 h-4 text-muted absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     <input type="text" name="q" value="<?= $filterValue('q') ?>" placeholder="<?= htmlspecialchars(smb_t('File, folder, or path...', 'Arquivo, pasta ou caminho...')) ?>" class="pl-9 pr-3 py-2 w-full text-sm text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
