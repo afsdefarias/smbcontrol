@@ -23,14 +23,29 @@ Managing Samba shares and extracting readable audit logs can be complex and time
 * **Lightweight:** Designed to run smoothly on standard infrastructure without heavy dependencies.
 
 ### ⚙️ Prerequisites
-* Linux (Debian/Ubuntu) or FreeBSD environment.
-* Samba Server installed and configured.
+* Linux (Debian/Ubuntu or Arch Linux) environment.
 * PHP 8.x
-* Web Server (Apache/Nginx)
-* Relational Database (MySQL/MariaDB)
+* Apache, Samba, MariaDB, rsyslog, ACL tools, and Git (installed automatically).
 
-### 🚀 Installation (Coming Soon)
-*Instructions on how to deploy the panel will be added here.*
+### 🚀 One-command installation
+
+Run this command as a user with `sudo` access. It detects Debian/Ubuntu or Arch Linux, installs the required packages, configures Apache, MariaDB, Samba, rsyslog, ACLs and sudo permissions, creates the database, and clones the latest `main` branch:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/afsdefarias/smbcontrol/main/scripts/install.sh | sudo bash
+```
+
+The installer asks for the initial `admin` password. It prints the panel URL and username when it finishes. Existing `/etc/samba`, Samba shares, database data, and an existing `config/database.php` are preserved when the installer is run again.
+
+### 🔄 Updating without losing data
+
+After installation, update the application from GitHub with:
+
+```bash
+sudo update-smbcontrol
+```
+
+The command fetches the latest `main` branch, updates only the application source, restores the local database configuration, validates PHP, and restarts Apache and Samba. It does not delete or recreate MariaDB data, `/etc/samba/smb.conf`, `/etc/samba/shares.conf`, Samba users, shares, folders, or files.
 
 ---
 
@@ -51,14 +66,29 @@ O **smbcontrol** foi idealizado para atender às rígidas exigências de complia
 * **Leve e Rápido:** Arquitetura otimizada para rodar nativamente na sua infraestrutura, sem dependência pesada de banco de dados para os logs.
 
 ### ⚙️ Pré-requisitos
-* Ambiente Linux (Debian/Ubuntu) ou FreeBSD.
-* Servidor Samba instalado e configurado.
+* Ambiente Linux (Debian/Ubuntu ou Arch Linux).
 * PHP 8.x
-* Servidor Web (Apache/Nginx)
-* Banco de Dados (MySQL/MariaDB)
+* Apache, Samba, MariaDB, rsyslog, ACL e Git (instalados automaticamente).
 
-### 🚀 Instalação (Em Breve)
-*As instruções de instalação e deploy serão adicionadas em breve.*
+### 🚀 Instalação automática
+
+Execute este comando com um usuário que tenha acesso ao `sudo`. Ele detecta Debian/Ubuntu ou Arch Linux, instala as dependências, configura Apache, MariaDB, Samba, rsyslog, ACLs e sudo, cria o banco e baixa a versão mais recente da branch `main`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/afsdefarias/smbcontrol/main/scripts/install.sh | sudo bash
+```
+
+O instalador solicita a senha inicial do usuário `admin` e mostra a URL do painel ao terminar. Se for executado novamente, preserva `/etc/samba`, os compartilhamentos, os dados do banco e o `config/database.php` existente.
+
+### 🔄 Atualização sem perder dados
+
+Depois da instalação, atualize o sistema com:
+
+```bash
+sudo update-smbcontrol
+```
+
+O comando baixa a versão mais recente da branch `main`, atualiza somente os arquivos da aplicação, restaura a configuração local do banco, valida o PHP e reinicia Apache e Samba. Ele não apaga nem recria o banco MariaDB, `smb.conf`, `shares.conf`, usuários Samba, compartilhamentos, pastas ou arquivos.
 
 ### 💼 Suporte Comercial
 Este é um software de código aberto (Open-Source). Para instituições que necessitam de **SLA e Suporte Técnico** obrigatório (como exigido por normativas de compliance), oferecemos contratos de suporte comercial. Entre em contato para mais detalhes.

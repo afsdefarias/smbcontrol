@@ -5,8 +5,17 @@ use App\Services\Shell;
 use App\Models\Database;
 
 class DashboardController {
+    private function sambaServiceName(): string {
+        foreach (['smbd', 'smb'] as $service) {
+            if (is_file('/etc/systemd/system/' . $service . '.service') || is_file('/usr/lib/systemd/system/' . $service . '.service')) {
+                return $service;
+            }
+        }
+        return 'smbd';
+    }
+
     public function index() {
-        $status = Shell::execSudo('/usr/bin/systemctl is-active smbd');
+        $status = Shell::execSudo('/usr/bin/systemctl is-active ' . $this->sambaServiceName());
         $isActive = trim($status['output']) === 'active';
         
         require __DIR__ . '/../Views/dashboard.php';
@@ -17,7 +26,7 @@ class DashboardController {
             $action = $_POST['action'] ?? '';
             
             if (in_array($action, ['start', 'stop', 'restart'])) {
-                $result = Shell::execSudo("/usr/bin/systemctl $action smbd");
+                $result = Shell::execSudo('/usr/bin/systemctl ' . $action . ' ' . $this->sambaServiceName());
                 if ($result['success']) {
                     $_SESSION['message'] = smb_t("smbd service completed action $action successfully.", "Serviço smbd executou a ação $action com sucesso.");
                 } else {

@@ -8,6 +8,15 @@ class SambaController {
     private const SMB_CONF = '/etc/samba/smb.conf';
     private const SHARES_CONF = '/etc/samba/shares.conf';
 
+    private function sambaServiceName(): string {
+        foreach (['smbd', 'smb'] as $service) {
+            if (is_file('/etc/systemd/system/' . $service . '.service') || is_file('/usr/lib/systemd/system/' . $service . '.service')) {
+                return $service;
+            }
+        }
+        return 'smbd';
+    }
+
     private function getSystemUsers(): array {
         $users = [];
         $passwdFile = @file('/etc/passwd');
@@ -60,12 +69,12 @@ class SambaController {
 
     private function validateAndReload(): void {
         $this->runSudo('/usr/bin/testparm -s', smb_t('Invalid Samba configuration', 'Configuração Samba inválida'));
-        $this->runSudo('/usr/bin/systemctl reload smbd', smb_t('Could not reload smbd', 'Não foi possível recarregar o smbd'));
+        $this->runSudo('/usr/bin/systemctl reload ' . $this->sambaServiceName(), smb_t('Could not reload Samba', 'Não foi possível recarregar o Samba'));
     }
 
     private function validateAndRestart(): void {
         $this->runSudo('/usr/bin/testparm -s', smb_t('Invalid Samba configuration', 'Configuração Samba inválida'));
-        $this->runSudo('/usr/bin/systemctl restart smbd', smb_t('Could not restart smbd', 'Não foi possível reiniciar o smbd'));
+        $this->runSudo('/usr/bin/systemctl restart ' . $this->sambaServiceName(), smb_t('Could not restart Samba', 'Não foi possível reiniciar o Samba'));
     }
 
     private function isValidAccountName(string $name): bool {
@@ -683,7 +692,7 @@ class SambaController {
                 $testResult = Shell::execSudo('/usr/bin/testparm -s');
 
                 if ($testResult['success']) {
-                    $this->runSudo('/usr/bin/systemctl reload smbd', smb_t('Could not reload smbd', 'Não foi possível recarregar o smbd'));
+                    $this->runSudo('/usr/bin/systemctl reload ' . $this->sambaServiceName(), smb_t('Could not reload Samba', 'Não foi possível recarregar o Samba'));
                     $_SESSION['message'] = smb_t('Share parameters saved, validated, and applied to Samba.', 'Parâmetros dos compartilhamentos salvos, validados e aplicados ao Samba.');
                     header('Location: /samba/shares-config');
                     exit;
