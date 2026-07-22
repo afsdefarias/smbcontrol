@@ -49,6 +49,10 @@
                 <input type="text" name="deleted_by" value="<?= $filterValue('deleted_by') ?>" placeholder="<?= htmlspecialchars(smb_t('SMB user', 'Usuário SMB')) ?>" class="px-3 py-2 text-sm text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
             </div>
             <div class="flex flex-col gap-1">
+                <label class="text-xs text-muted uppercase tracking-wider"><?= smb_t('Machine / IP', 'Máquina / IP') ?></label>
+                <input type="text" name="machine" value="<?= $filterValue('machine') ?>" placeholder="172.16.0.12" class="px-3 py-2 text-sm text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+            </div>
+            <div class="flex flex-col gap-1">
                 <label class="text-xs text-muted uppercase tracking-wider"><?= smb_t('Deleted from', 'Excluído de') ?></label>
                 <input type="date" name="date_from" value="<?= $filterValue('date_from') ?>" class="px-3 py-2 text-sm text-fg border border-bg0 rounded-sm focus:border-acc transition-colors">
             </div>
@@ -100,6 +104,7 @@
                         <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Type', 'Tipo') ?></th>
                         <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Share owner', 'Dono do share') ?></th>
                         <th class="px-4 py-3 font-medium uppercase"><?= smb_t('User', 'Usuário') ?></th>
+                        <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Machine / IP', 'Máquina / IP') ?></th>
                         <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Original location', 'Localização original') ?></th>
                         <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Deleted at', 'Excluído em') ?></th>
                         <th class="px-4 py-3 font-medium uppercase text-right"><?= smb_t('Size', 'Tamanho') ?></th>
@@ -109,7 +114,7 @@
                 <tbody class="divide-y divide-bg0">
                     <?php if (empty($items)): ?>
                         <tr>
-                            <td colspan="9" class="px-4 py-8 text-center text-muted italic">
+                            <td colspan="10" class="px-4 py-8 text-center text-muted italic">
                                 <?= smb_t('No deleted items match the current filter.', 'Nenhum item excluído corresponde ao filtro atual.') ?>
                             </td>
                         </tr>
@@ -121,6 +126,7 @@
                                 <td class="px-4 py-2.5 text-muted"><?= $item['type'] === 'directory' ? smb_t('Folder', 'Pasta') : smb_t('File', 'Arquivo') ?></td>
                                 <td class="px-4 py-2.5 text-muted"><?= htmlspecialchars($item['owner'] ?: '-') ?></td>
                                 <td class="px-4 py-2.5 text-fg"><?= htmlspecialchars($item['user']) ?></td>
+                                <td class="px-4 py-2.5 text-muted"><?= htmlspecialchars($item['machine'] ?? '-') ?></td>
                                 <td class="px-4 py-2.5 text-muted max-w-md truncate" title="<?= htmlspecialchars($item['original_path']) ?>"><?= htmlspecialchars($item['original_path']) ?></td>
                                 <td class="px-4 py-2.5 text-muted"><?= htmlspecialchars($item['deleted_at']) ?></td>
                                 <td class="px-4 py-2.5 text-muted text-right"><?= $item['type'] === 'directory' ? '-' : htmlspecialchars($formatBytes((int)$item['size'])) ?></td>

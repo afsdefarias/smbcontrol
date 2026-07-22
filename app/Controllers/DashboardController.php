@@ -63,6 +63,7 @@ class DashboardController {
             'host' => $host,
             'user' => $fields[0] ?? '?',
             'ip' => $fields[1] ?? '?',
+            'machine' => $fields[1] ?? '?',
             'share' => $fields[2] ?? '?',
             'operation' => $fields[3] ?? '?',
             'status' => $fields[4] ?? '?',

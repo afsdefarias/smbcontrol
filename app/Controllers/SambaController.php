@@ -278,7 +278,7 @@ class SambaController {
             }
         }
 
-        foreach (['owner' => 'owner', 'deleted_by' => 'user'] as $filterKey => $itemKey) {
+        foreach (['owner' => 'owner', 'deleted_by' => 'user', 'machine' => 'machine'] as $filterKey => $itemKey) {
             $value = trim($filters[$filterKey] ?? '');
             if ($value !== '' && stripos((string)($item[$itemKey] ?? ''), $value) === false) {
                 return false;
@@ -318,6 +318,7 @@ class SambaController {
                 $folderDeletes[] = [
                     'timestamp' => strtok(trim($prefix), ' ') ?: '',
                     'user' => $fields[0] ?? '',
+                    'machine' => $fields[1] ?? '?',
                     'share' => $fields[2] ?? '',
                     'path' => $fields[5] ?? '',
                 ];
@@ -375,6 +376,7 @@ class SambaController {
                     'share' => $share['name'],
                     'owner' => $share['owner'],
                     'user' => $delete['user'],
+                    'machine' => $delete['machine'],
                     'name' => basename($originalRelative),
                     'type' => 'directory',
                     'size' => 0,
@@ -436,17 +438,27 @@ class SambaController {
                 }
 
                 $fileName = basename($relativePath);
+                $machine = '-';
+                $auditTimestamp = '';
+                $originalAbsolute = rtrim($share['path'], '/') . '/' . trim($originalRelative, '/');
+                foreach ($folderDeletes as $delete) {
+                    if ($delete['share'] === $share['name'] && $delete['user'] === $user && $delete['path'] === $originalAbsolute) {
+                        $machine = $delete['machine'];
+                        $auditTimestamp = $delete['timestamp'];
+                    }
+                }
 
                 $items[] = [
                     'share' => $share['name'],
                     'owner' => $share['owner'],
                     'user' => $user,
+                    'machine' => $machine,
                     'name' => $fileName,
                     'type' => $entry['type'],
                     'size' => $entry['size'],
-                    'deleted_at' => $entry['deleted_at'],
-                    'sort_time' => $entry['sort_time'],
-                    'deleted_timestamp' => (int)$entry['sort_time'],
+                    'deleted_at' => $auditTimestamp !== '' ? $auditTimestamp : $entry['deleted_at'],
+                    'sort_time' => $auditTimestamp !== '' ? (float)strtotime($auditTimestamp) : $entry['sort_time'],
+                    'deleted_timestamp' => $auditTimestamp !== '' ? (int)strtotime($auditTimestamp) : (int)$entry['sort_time'],
                     'recycle_path' => $relativePath,
                     'original_path' => $share['name'] . '/' . $originalRelative,
                 ];
@@ -910,6 +922,7 @@ class SambaController {
             'q' => trim($_GET['q'] ?? ''),
             'owner' => trim($_GET['owner'] ?? ''),
             'deleted_by' => trim($_GET['deleted_by'] ?? ''),
+            'machine' => trim($_GET['machine'] ?? ''),
             'date_from' => trim($_GET['date_from'] ?? ''),
             'date_to' => trim($_GET['date_to'] ?? ''),
         ];

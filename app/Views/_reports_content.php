@@ -39,8 +39,8 @@
             </div>
 
             <div class="flex flex-col gap-1">
-                <label class="text-xs text-muted uppercase tracking-wider">IP</label>
-                <input type="text" name="ip" value="<?= $filterValue('ip') ?>" placeholder="127.0.0.1" class="px-3 py-2 text-sm text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
+                <label class="text-xs text-muted uppercase tracking-wider"><?= smb_t('Machine / IP', 'Máquina / IP') ?></label>
+                <input type="text" name="ip" value="<?= $filterValue('ip') ?>" placeholder="172.16.0.12" class="px-3 py-2 text-sm text-fg placeholder:text-muted/50 border border-bg0 rounded-sm focus:border-acc transition-colors">
             </div>
 
             <div class="flex flex-col gap-1">
@@ -98,7 +98,7 @@
             <thead class="text-muted tracking-wider border-b border-bg0">
                 <tr>
                     <th class="px-4 py-3 font-medium uppercase"><?= smb_t('When', 'Quando') ?></th>
-                    <th class="px-4 py-3 font-medium uppercase">IP</th>
+                    <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Machine / IP', 'Máquina / IP') ?></th>
                     <th class="px-4 py-3 font-medium uppercase"><?= smb_t('User', 'Usuário') ?></th>
                     <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Share', 'Compartilhamento') ?></th>
                     <th class="px-4 py-3 font-medium uppercase"><?= smb_t('Op', 'Operação') ?></th>
