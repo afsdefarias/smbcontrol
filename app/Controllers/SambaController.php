@@ -311,7 +311,7 @@ class SambaController {
 
                 [$prefix, $auditPart] = explode('smbd_audit:', $line, 2);
                 $fields = explode('|', trim($auditPart));
-                if (strtolower($fields[3] ?? '') !== 'unlinkat') {
+                if (!in_array(strtolower($fields[3] ?? ''), ['unlinkat', 'renameat'], true)) {
                     continue;
                 }
 
